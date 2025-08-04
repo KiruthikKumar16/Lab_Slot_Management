@@ -265,10 +265,10 @@ export default function StudentDashboard() {
                   <div key={session.id} className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                     <div className="flex-1">
                       <div className="font-medium text-slate-800">
-                        {session.lab_slots?.date ? `Lab Session ${index + 1}` : 'Organic Chemistry Lab A'}
+                        {session.lab_slot?.date ? `Lab Session ${index + 1}` : 'Organic Chemistry Lab A'}
                       </div>
                       <div className="text-sm text-slate-600">
-                        {session.lab_slots?.date ? new Date(session.lab_slots.date).toLocaleDateString() : '2024-01-15'} • {session.lab_slots?.start_time || '14:00'} - {session.lab_slots?.end_time || '16:00'}
+                        {session.lab_slot?.date ? new Date(session.lab_slot.date).toLocaleDateString() : '2024-01-15'} • {session.lab_slot?.start_time || '14:00'} - {session.lab_slot?.end_time || '16:00'}
                       </div>
                     </div>
                     <span className={`px-2 py-1 text-xs rounded-full ${
