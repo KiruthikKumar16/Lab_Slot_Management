@@ -45,15 +45,15 @@ export default function AdminDashboard() {
     try {
       setLoading(true)
       
-      // Fetch all bookings
-      const { data: bookings, error: bookingsError } = await supabase
-        .from('bookings')
-        .select(`
-          *,
-          lab_slots (*),
-          users (*)
-        `)
-        .order('created_at', { ascending: false })
+             // Fetch all bookings
+       const { data: bookings, error: bookingsError } = await supabase
+         .from('bookings')
+         .select(`
+           *,
+           lab_slot (*),
+           user (*)
+         `)
+         .order('created_at', { ascending: false })
 
       if (bookingsError) throw bookingsError
 
@@ -65,10 +65,10 @@ export default function AdminDashboard() {
 
       if (studentsError) throw studentsError
 
-      // Calculate stats
-      const today = new Date().toISOString().split('T')[0]
-      const todayBookings = bookings?.filter(b => b.lab_slots?.date === today) || []
-      const noShows = bookings?.filter(b => b.status === 'no-show') || []
+             // Calculate stats
+       const today = new Date().toISOString().split('T')[0]
+       const todayBookings = bookings?.filter(b => b.lab_slot?.date === today) || []
+       const noShows = bookings?.filter(b => b.status === 'no-show') || []
 
       setStats({
         totalBookings: bookings?.length || 0,
@@ -312,9 +312,9 @@ export default function AdminDashboard() {
                     <div className="font-medium text-slate-800">
                       {booking.user?.email || 'Unknown Student'}
                     </div>
-                    <div className="text-sm text-slate-600">
-                      {booking.lab_slots?.date} • {booking.lab_slots?.start_time} - {booking.lab_slots?.end_time}
-                    </div>
+                                         <div className="text-sm text-slate-600">
+                       {booking.lab_slot?.date} • {booking.lab_slot?.start_time} - {booking.lab_slot?.end_time}
+                     </div>
                   </div>
                   <span className={`px-2 py-1 text-xs rounded-full ${
                     booking.status === 'completed' ? 'bg-green-100 text-green-800' :
