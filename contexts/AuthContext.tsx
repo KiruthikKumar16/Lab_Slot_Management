@@ -53,19 +53,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initializeAuth()
 
-    // Listen for auth changes
+    // Listen for auth changes with better error handling
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email)
         
         if (mounted) {
-          setUser(session?.user ?? null)
-          if (session?.user) {
-            await fetchAppUser(session.user.id)
-          } else {
-            setAppUser(null)
+          try {
+            setUser(session?.user ?? null)
+            if (session?.user) {
+              await fetchAppUser(session.user.id)
+            } else {
+              setAppUser(null)
+            }
+          } catch (error) {
+            console.error('Error handling auth state change:', error)
+            // Don't log out on error, just log it
+          } finally {
+            setLoading(false)
           }
-          setLoading(false)
         }
       }
     )
@@ -93,6 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await createAppUser(userId)
         } else {
           console.error('Error fetching app user:', error)
+          // Don't throw error, just log it to prevent logout
         }
         return
       }
@@ -101,6 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAppUser(data)
     } catch (error) {
       console.error('Error fetching app user:', error)
+      // Don't throw error, just log it to prevent logout
     }
   }
 
