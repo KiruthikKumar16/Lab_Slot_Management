@@ -10,6 +10,7 @@ export async function GET(request: Request) {
     console.log('=== AUTH CALLBACK DEBUG ===')
     console.log('Full URL:', requestUrl.toString())
     console.log('All search params:', Object.fromEntries(requestUrl.searchParams.entries()))
+    console.log('Headers:', Object.fromEntries(request.headers.entries()))
     
     const code = requestUrl.searchParams.get('code')
     const accessToken = requestUrl.searchParams.get('access_token')
