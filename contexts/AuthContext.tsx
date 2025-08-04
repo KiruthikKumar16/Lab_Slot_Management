@@ -22,33 +22,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchAppUser(session.user.id)
+    let mounted = true
+
+    const initializeAuth = async () => {
+      try {
+        console.log('Initializing auth...')
+        
+        // Get initial session
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        if (error) {
+          console.error('Error getting session:', error)
+        }
+
+        if (mounted) {
+          setUser(session?.user ?? null)
+          if (session?.user) {
+            await fetchAppUser(session.user.id)
+          }
+          setLoading(false)
+          console.log('Auth initialized, user:', session?.user?.email)
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error)
+        if (mounted) {
+          setLoading(false)
+        }
       }
-      setLoading(false)
-    })
+    }
+
+    initializeAuth()
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setUser(session?.user ?? null)
-        if (session?.user) {
-          await fetchAppUser(session.user.id)
-        } else {
-          setAppUser(null)
+        console.log('Auth state changed:', event, session?.user?.email)
+        
+        if (mounted) {
+          setUser(session?.user ?? null)
+          if (session?.user) {
+            await fetchAppUser(session.user.id)
+          } else {
+            setAppUser(null)
+          }
+          setLoading(false)
         }
-        setLoading(false)
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const fetchAppUser = async (userId: string) => {
     try {
+      console.log('Fetching app user for:', userId)
+      
       const { data, error } = await supabase
         .from('users')
         .select('*')
@@ -58,6 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         // If user doesn't exist in our app table, create them
         if (error.code === 'PGRST116') {
+          console.log('User not found in app table, creating...')
           await createAppUser(userId)
         } else {
           console.error('Error fetching app user:', error)
@@ -65,6 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
+      console.log('App user found:', data)
       setAppUser(data)
     } catch (error) {
       console.error('Error fetching app user:', error)
@@ -75,6 +108,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data: authUser } = await supabase.auth.getUser()
       if (!authUser.user) return
+
+      console.log('Creating app user for:', authUser.user.email)
 
       const { data, error } = await supabase
         .from('users')
@@ -91,6 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
+      console.log('App user created:', data)
       setAppUser(data)
     } catch (error) {
       console.error('Error creating app user:', error)
