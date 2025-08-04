@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { Calendar, Clock, Users, MapPin, AlertTriangle, Filter } from 'lucide-react'
+import { Calendar, Clock, Users, MapPin, AlertTriangle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { LabSlot } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -20,7 +20,6 @@ export default function BookPage() {
   const [loading, setLoading] = useState(true)
   const [bookingLoading, setBookingLoading] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState('')
-  const [selectedDayOfWeek, setSelectedDayOfWeek] = useState('')
 
   const isSunday = new Date().getDay() === 0
 
@@ -36,7 +35,7 @@ export default function BookPage() {
     }
 
     fetchSlots()
-  }, [user, isAdmin, router, selectedDate, selectedDayOfWeek])
+  }, [user, isAdmin, router, selectedDate])
 
   const fetchSlots = async () => {
     try {
@@ -69,19 +68,10 @@ export default function BookPage() {
 
       if (error) throw error
 
-      let slotsWithCount = data?.map(slot => ({
+      const slotsWithCount = data?.map(slot => ({
         ...slot,
         booked_count: slot.bookings?.[0]?.count || 0
       })) || []
-
-      // Filter by day of week if selected
-      if (selectedDayOfWeek) {
-        slotsWithCount = slotsWithCount.filter(slot => {
-          const dayOfWeek = new Date(slot.date).getDay()
-          const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-          return dayNames[dayOfWeek] === selectedDayOfWeek
-        })
-      }
 
       setSlots(slotsWithCount)
     } catch (error) {
@@ -142,17 +132,6 @@ export default function BookPage() {
     return slot.booked_count < slot.capacity
   }
 
-  const dayOfWeekOptions = [
-    { value: '', label: 'All Days' },
-    { value: 'Sunday', label: 'Sunday' },
-    { value: 'Monday', label: 'Monday' },
-    { value: 'Tuesday', label: 'Tuesday' },
-    { value: 'Wednesday', label: 'Wednesday' },
-    { value: 'Thursday', label: 'Thursday' },
-    { value: 'Friday', label: 'Friday' },
-    { value: 'Saturday', label: 'Saturday' }
-  ]
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
@@ -189,48 +168,28 @@ export default function BookPage() {
           </div>
         )}
 
-        {/* Filters */}
+        {/* Date Filter */}
         <div className="glass-card p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Date Filter */}
-            <div className="flex items-center space-x-4">
-              <Calendar className="w-5 h-5 text-slate-600" />
-              <label className="font-semibold text-slate-800">Select Date:</label>
-              <select
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="bg-white/60 backdrop-blur-sm border border-white/30 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800"
-              >
-                <option value="">All Available Dates</option>
-                {getAvailableDates().map(date => (
-                  <option key={date} value={date}>
-                    {new Date(date).toLocaleDateString('en-US', { 
-                      weekday: 'long', 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Day of Week Filter */}
-            <div className="flex items-center space-x-4">
-              <Filter className="w-5 h-5 text-slate-600" />
-              <label className="font-semibold text-slate-800">Day of Week:</label>
-              <select
-                value={selectedDayOfWeek}
-                onChange={(e) => setSelectedDayOfWeek(e.target.value)}
-                className="bg-white/60 backdrop-blur-sm border border-white/30 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800"
-              >
-                {dayOfWeekOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div className="flex items-center space-x-4">
+            <Calendar className="w-5 h-5 text-slate-600" />
+            <label className="font-semibold text-slate-800">Select Date:</label>
+            <select
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="bg-white/60 backdrop-blur-sm border border-white/30 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800"
+            >
+              <option value="">All Available Dates</option>
+              {getAvailableDates().map(date => (
+                <option key={date} value={date}>
+                  {new Date(date).toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
