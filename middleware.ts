@@ -7,6 +7,11 @@ export async function middleware(req: NextRequest) {
   const supabase = createMiddlewareClient({ req, res })
 
   try {
+    // Skip middleware for auth callback route
+    if (req.nextUrl.pathname.startsWith('/auth/callback')) {
+      return res
+    }
+
     // Refresh session if expired - required for Server Components
     const { data: { session }, error } = await supabase.auth.getSession()
     
@@ -51,7 +56,8 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
+     * - auth/callback (OAuth callback route)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|auth/callback|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 } 
