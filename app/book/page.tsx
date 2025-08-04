@@ -41,7 +41,7 @@ export default function BookPage() {
       setLoading(true)
       
       // Get next 4 weeks of dates
-      const dates = []
+      const dates: string[] = []
       const today = new Date()
       for (let i = 0; i < 28; i++) {
         const date = new Date(today)
@@ -113,7 +113,7 @@ export default function BookPage() {
   }
 
   const getAvailableDates = () => {
-    const dates = []
+    const dates: string[] = []
     const today = new Date()
     for (let i = 0; i < 28; i++) {
       const date = new Date(today)
