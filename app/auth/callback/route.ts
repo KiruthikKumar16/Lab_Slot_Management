@@ -9,11 +9,21 @@ export async function GET(request: Request) {
     const code = requestUrl.searchParams.get('code')
     const accessToken = requestUrl.searchParams.get('access_token')
     const refreshToken = requestUrl.searchParams.get('refresh_token')
+    const error = requestUrl.searchParams.get('error')
+    const errorDescription = requestUrl.searchParams.get('error_description')
 
     console.log('Auth callback route - URL:', requestUrl.toString())
     console.log('Code:', !!code)
     console.log('Access token:', !!accessToken)
     console.log('Refresh token:', !!refreshToken)
+    console.log('Error:', error)
+    console.log('Error description:', errorDescription)
+
+    // If there's an OAuth error, redirect to login with error
+    if (error) {
+      console.error('OAuth error:', error, errorDescription)
+      return NextResponse.redirect(`${requestUrl.origin}/login?error=oauth_${error}`)
+    }
 
     const supabase = createRouteHandlerClient({ cookies })
 
@@ -43,8 +53,10 @@ export async function GET(request: Request) {
       console.log('Session set successfully')
       return NextResponse.redirect(`${requestUrl.origin}/dashboard`)
     } else {
-      console.log('No authentication tokens found')
-      return NextResponse.redirect(`${requestUrl.origin}/login?error=no_tokens`)
+      console.log('No authentication tokens found - this might be a direct visit to the callback URL')
+      // Instead of redirecting to login with error, redirect to home page
+      // which will handle the authentication state properly
+      return NextResponse.redirect(`${requestUrl.origin}`)
     }
   } catch (error) {
     console.error('Auth callback error:', error)
