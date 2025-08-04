@@ -3,12 +3,13 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { Toaster } from 'react-hot-toast'
+import SessionTimeout from '@/components/SessionTimeout'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Lab Slot Management - VIT',
-  description: 'PhD scholars can book lab sessions and submit sample counts',
+  title: 'ChemLab Pro - University Lab Management System',
+  description: 'Manage lab sessions, bookings, and student access for university chemistry labs',
 }
 
 export default function RootLayout({
@@ -21,6 +22,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthProvider>
           {children}
+          <SessionTimeout timeoutMinutes={30} warningMinutes={5} />
           <Toaster 
             position="top-right"
             toastOptions={{

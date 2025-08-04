@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { User as AppUser } from '@/lib/supabase'
@@ -16,10 +16,50 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+// Inactivity timeout in minutes
+const INACTIVITY_TIMEOUT = 30 // 30 minutes
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [appUser, setAppUser] = useState<AppUser | null>(null)
   const [loading, setLoading] = useState(true)
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const lastActivityRef = useRef<number>(Date.now())
+
+  // Reset inactivity timer
+  const resetInactivityTimer = () => {
+    lastActivityRef.current = Date.now()
+    
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current)
+    }
+    
+    inactivityTimerRef.current = setTimeout(() => {
+      console.log('User inactive for 30 minutes, signing out...')
+      handleSignOut()
+    }, INACTIVITY_TIMEOUT * 60 * 1000)
+  }
+
+  // Handle user activity
+  const handleUserActivity = () => {
+    if (user) {
+      resetInactivityTimer()
+    }
+  }
+
+  // Handle sign out
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut()
+      setUser(null)
+      setAppUser(null)
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current)
+      }
+    } catch (error) {
+      console.error('Error signing out:', error)
+    }
+  }
 
   useEffect(() => {
     let mounted = true
@@ -39,6 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(session?.user ?? null)
           if (session?.user) {
             await fetchAppUser(session.user.id)
+            resetInactivityTimer() // Start inactivity timer
           }
           setLoading(false)
           console.log('Auth initialized, user:', session?.user?.email)
@@ -63,8 +104,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(session?.user ?? null)
             if (session?.user) {
               await fetchAppUser(session.user.id)
+              resetInactivityTimer() // Reset timer on auth state change
             } else {
               setAppUser(null)
+              if (inactivityTimerRef.current) {
+                clearTimeout(inactivityTimerRef.current)
+              }
             }
           } catch (error) {
             console.error('Error handling auth state change:', error)
@@ -76,11 +121,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     )
 
+    // Set up activity listeners
+    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click']
+    
+    activityEvents.forEach(event => {
+      document.addEventListener(event, handleUserActivity, true)
+    })
+
+    // Check for activity every minute
+    const activityCheckInterval = setInterval(() => {
+      const timeSinceLastActivity = Date.now() - lastActivityRef.current
+      if (timeSinceLastActivity > INACTIVITY_TIMEOUT * 60 * 1000 && user) {
+        console.log('User inactive for too long, signing out...')
+        handleSignOut()
+      }
+    }, 60000) // Check every minute
+
     return () => {
       mounted = false
       subscription.unsubscribe()
+      
+      // Clean up activity listeners
+      activityEvents.forEach(event => {
+        document.removeEventListener(event, handleUserActivity, true)
+      })
+      
+      // Clean up intervals
+      clearInterval(activityCheckInterval)
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current)
+      }
     }
-  }, [])
+  }, [user])
 
   const fetchAppUser = async (userId: string) => {
     try {
@@ -163,8 +235,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut()
-    if (error) throw error
+    await handleSignOut()
   }
 
   const isAdmin = appUser?.role === 'admin'
