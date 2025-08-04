@@ -9,6 +9,7 @@ export default function HomePage() {
   const { user, appUser, loading, isAdmin } = useAuth()
   const router = useRouter()
   const [timeoutReached, setTimeoutReached] = useState(false)
+  const [redirecting, setRedirecting] = useState(false)
 
   useEffect(() => {
     // Set a timeout to prevent infinite loading
@@ -20,16 +21,21 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
-    if (!loading || timeoutReached) {
+    if (!loading && !redirecting) {
+      setRedirecting(true)
+      
       if (!user) {
+        console.log('No user found, redirecting to login')
         router.push('/login')
       } else if (isAdmin) {
+        console.log('Admin user found, redirecting to admin')
         router.push('/admin')
       } else {
+        console.log('Student user found, redirecting to dashboard')
         router.push('/dashboard')
       }
     }
-  }, [user, loading, isAdmin, router, timeoutReached])
+  }, [user, loading, isAdmin, router, redirecting])
 
   if (loading && !timeoutReached) {
     return (
@@ -59,5 +65,12 @@ export default function HomePage() {
     )
   }
 
-  return null
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="text-center">
+        <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+        <p className="text-slate-600">Redirecting...</p>
+      </div>
+    </div>
+  )
 } 

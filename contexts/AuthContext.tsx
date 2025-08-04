@@ -25,6 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null)
   const lastActivityRef = useRef<number>(Date.now())
+  const sessionRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // Reset inactivity timer
   const resetInactivityTimer = () => {
@@ -47,6 +48,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Refresh session periodically to keep it alive
+  const refreshSession = async () => {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession()
+      if (error) {
+        console.error('Error refreshing session:', error)
+        return
+      }
+      
+      if (session) {
+        console.log('Session refreshed successfully')
+        // Update user state if needed
+        if (!user || user.id !== session.user.id) {
+          setUser(session.user)
+          await fetchAppUser(session.user.id)
+        }
+      }
+    } catch (error) {
+      console.error('Error in session refresh:', error)
+    }
+  }
+
   // Handle sign out
   const handleSignOut = async () => {
     try {
@@ -55,6 +78,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAppUser(null)
       if (inactivityTimerRef.current) {
         clearTimeout(inactivityTimerRef.current)
+      }
+      if (sessionRefreshIntervalRef.current) {
+        clearInterval(sessionRefreshIntervalRef.current)
       }
     } catch (error) {
       console.error('Error signing out:', error)
@@ -80,6 +106,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (session?.user) {
             await fetchAppUser(session.user.id)
             resetInactivityTimer() // Start inactivity timer
+            
+            // Start session refresh interval (every 5 minutes)
+            sessionRefreshIntervalRef.current = setInterval(refreshSession, 5 * 60 * 1000)
           }
           setLoading(false)
           console.log('Auth initialized, user:', session?.user?.email)
@@ -101,14 +130,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (mounted) {
           try {
-            setUser(session?.user ?? null)
             if (session?.user) {
+              setUser(session.user)
               await fetchAppUser(session.user.id)
               resetInactivityTimer() // Reset timer on auth state change
+              
+              // Start session refresh interval
+              if (sessionRefreshIntervalRef.current) {
+                clearInterval(sessionRefreshIntervalRef.current)
+              }
+              sessionRefreshIntervalRef.current = setInterval(refreshSession, 5 * 60 * 1000)
             } else {
+              setUser(null)
               setAppUser(null)
               if (inactivityTimerRef.current) {
                 clearTimeout(inactivityTimerRef.current)
+              }
+              if (sessionRefreshIntervalRef.current) {
+                clearInterval(sessionRefreshIntervalRef.current)
               }
             }
           } catch (error) {
@@ -150,6 +189,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearInterval(activityCheckInterval)
       if (inactivityTimerRef.current) {
         clearTimeout(inactivityTimerRef.current)
+      }
+      if (sessionRefreshIntervalRef.current) {
+        clearInterval(sessionRefreshIntervalRef.current)
       }
     }
   }, [user])
