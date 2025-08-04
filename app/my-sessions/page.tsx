@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { Calendar, Clock, MapPin, AlertTriangle, CheckCircle, XCircle, FileText, Filter } from 'lucide-react'
+import { Calendar, Clock, MapPin, AlertTriangle, CheckCircle, XCircle, FileText } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Booking, LabSlot } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -17,9 +17,7 @@ export default function MySessionsPage() {
   const { user, isAdmin } = useAuth()
   const router = useRouter()
   const [sessions, setSessions] = useState<SessionWithSlot[]>([])
-  const [filteredSessions, setFilteredSessions] = useState<SessionWithSlot[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedDayOfWeek, setSelectedDayOfWeek] = useState('')
 
   useEffect(() => {
     if (!user) {
@@ -34,20 +32,6 @@ export default function MySessionsPage() {
 
     fetchSessions()
   }, [user, isAdmin, router])
-
-  useEffect(() => {
-    // Filter sessions based on selected day of week
-    if (selectedDayOfWeek) {
-      const filtered = sessions.filter(session => {
-        const dayOfWeek = new Date(session.lab_slot.date).getDay()
-        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-        return dayNames[dayOfWeek] === selectedDayOfWeek
-      })
-      setFilteredSessions(filtered)
-    } else {
-      setFilteredSessions(sessions)
-    }
-  }, [sessions, selectedDayOfWeek])
 
   const fetchSessions = async () => {
     try {
@@ -126,17 +110,6 @@ export default function MySessionsPage() {
     }
   }
 
-  const dayOfWeekOptions = [
-    { value: '', label: 'All Days' },
-    { value: 'Monday', label: 'Monday' },
-    { value: 'Tuesday', label: 'Tuesday' },
-    { value: 'Wednesday', label: 'Wednesday' },
-    { value: 'Thursday', label: 'Thursday' },
-    { value: 'Friday', label: 'Friday' },
-    { value: 'Saturday', label: 'Saturday' },
-    { value: 'Sunday', label: 'Sunday' }
-  ]
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
@@ -160,34 +133,10 @@ export default function MySessionsPage() {
           <p className="text-slate-600 text-lg">View and manage your lab sessions</p>
         </div>
 
-        {/* Day of Week Filter */}
-        <div className="glass-card p-6 mb-8">
-          <div className="flex items-center space-x-4">
-            <Filter className="w-5 h-5 text-slate-600" />
-            <label className="font-semibold text-slate-800">Filter by Day:</label>
-            <select
-              value={selectedDayOfWeek}
-              onChange={(e) => setSelectedDayOfWeek(e.target.value)}
-              className="bg-white/60 backdrop-blur-sm border border-white/30 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800"
-            >
-              {dayOfWeekOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            {selectedDayOfWeek && (
-              <span className="text-sm text-slate-600">
-                Showing {filteredSessions.length} session{filteredSessions.length !== 1 ? 's' : ''} for {selectedDayOfWeek}
-              </span>
-            )}
-          </div>
-        </div>
-
         {/* Sessions List */}
         <div className="space-y-6">
-          {filteredSessions.length > 0 ? (
-            filteredSessions.map((session) => {
+          {sessions.length > 0 ? (
+            sessions.map((session) => {
               const sessionDate = new Date(session.lab_slot.date)
               const today = new Date()
               const daysUntilSession = Math.ceil((sessionDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
@@ -217,12 +166,7 @@ export default function MySessionsPage() {
                     <div className="flex items-center space-x-3">
                       <Calendar className="w-4 h-4 text-slate-500" />
                       <span className="text-slate-700">
-                        {new Date(session.lab_slot.date).toLocaleDateString('en-US', { 
-                          weekday: 'long',
-                          year: 'numeric', 
-                          month: 'short', 
-                          day: 'numeric' 
-                        })}
+                        {new Date(session.lab_slot.date).toLocaleDateString()}
                       </span>
                     </div>
                     <div className="flex items-center space-x-3">
@@ -275,23 +219,14 @@ export default function MySessionsPage() {
               <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Calendar className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-xl font-semibold text-slate-800 mb-2">
-                {selectedDayOfWeek ? `No Sessions Found for ${selectedDayOfWeek}` : 'No Sessions Found'}
-              </h3>
-              <p className="text-slate-600 mb-6">
-                {selectedDayOfWeek 
-                  ? `You don't have any lab sessions scheduled for ${selectedDayOfWeek}.`
-                  : "You haven't booked any lab sessions yet."
-                }
-              </p>
-              {!selectedDayOfWeek && (
-                <button
-                  onClick={() => router.push('/book')}
-                  className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-800 transition-all duration-300"
-                >
-                  Book Your First Session
-                </button>
-              )}
+              <h3 className="text-xl font-semibold text-slate-800 mb-2">No Sessions Found</h3>
+              <p className="text-slate-600 mb-6">You haven't booked any lab sessions yet.</p>
+              <button
+                onClick={() => router.push('/book')}
+                className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-800 transition-all duration-300"
+              >
+                Book Your First Session
+              </button>
             </div>
           )}
         </div>
