@@ -42,22 +42,22 @@ export default function StudentDashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      // Fetch user's bookings
-      const { data: bookings, error } = await supabase
-        .from('bookings')
-        .select(`
-          *,
-          lab_slots (*)
-        `)
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false })
+             // Fetch user's bookings
+       const { data: bookings, error } = await supabase
+         .from('bookings')
+         .select(`
+           *,
+           lab_slot (*)
+         `)
+         .eq('user_id', user?.id)
+         .order('created_at', { ascending: false })
 
       if (error) throw error
 
-      // Calculate stats
-      const totalSessions = bookings?.length || 0
-      const completed = bookings?.filter(b => b.status === 'completed').length || 0
-      const upcoming = bookings?.filter(b => b.status === 'booked').length || 0
+             // Calculate stats
+       const totalSessions = bookings?.length || 0
+       const completed = bookings?.filter(b => b.status === 'booked').length || 0
+       const upcoming = bookings?.filter(b => b.status === 'booked').length || 0
 
       setStats({
         totalSessions,
@@ -65,11 +65,11 @@ export default function StudentDashboard() {
         upcoming
       })
 
-      // Find next session
-      const next = bookings?.find(b => 
-        b.status === 'booked' && 
-        new Date(b.lab_slots.date) > new Date()
-      )
+             // Find next session
+       const next = bookings?.find(b => 
+         b.status === 'booked' && 
+         new Date(b.lab_slot.date) > new Date()
+       )
       setNextSession(next || null)
 
       // Get recent sessions
@@ -271,13 +271,11 @@ export default function StudentDashboard() {
                         {session.lab_slot?.date ? new Date(session.lab_slot.date).toLocaleDateString() : '2024-01-15'} • {session.lab_slot?.start_time || '14:00'} - {session.lab_slot?.end_time || '16:00'}
                       </div>
                     </div>
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      session.status === 'completed' ? 'bg-green-100 text-green-800' :
-                      session.status === 'no-show' ? 'bg-orange-100 text-orange-800' :
-                      'bg-blue-100 text-blue-800'
-                    }`}>
-                      {session.status === 'completed' ? 'completed' : 
-                       session.status === 'no-show' ? 'no-show' : 'booked'}
+                                         <span className={`px-2 py-1 text-xs rounded-full ${
+                       session.status === 'no-show' ? 'bg-orange-100 text-orange-800' :
+                       'bg-blue-100 text-blue-800'
+                     }`}>
+                       {session.status === 'no-show' ? 'no-show' : 'booked'}
                     </span>
                   </div>
                 ))

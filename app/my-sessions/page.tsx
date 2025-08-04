@@ -9,7 +9,7 @@ import { Booking, LabSlot } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
 interface SessionWithSlot extends Booking {
-  lab_slots: LabSlot
+  lab_slot: LabSlot
 }
 
 export default function MySessionsPage() {
@@ -40,7 +40,7 @@ export default function MySessionsPage() {
         .from('bookings')
         .select(`
           *,
-          lab_slots (*)
+          lab_slot (*)
         `)
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false })
@@ -89,8 +89,6 @@ export default function MySessionsPage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed':
-        return <CheckCircle className="w-5 h-5 text-green-600" />
       case 'cancelled':
         return <XCircle className="w-5 h-5 text-red-600" />
       case 'no-show':
@@ -102,8 +100,6 @@ export default function MySessionsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800'
       case 'cancelled':
         return 'bg-red-100 text-red-800'
       case 'no-show':
@@ -139,11 +135,11 @@ export default function MySessionsPage() {
         <div className="space-y-6">
           {sessions.length > 0 ? (
             sessions.map((session) => {
-              const sessionDate = new Date(session.lab_slots.date)
+              const sessionDate = new Date(session.lab_slot.date)
               const today = new Date()
               const daysUntilSession = Math.ceil((sessionDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
               const canCancel = daysUntilSession >= 1 && session.status === 'booked'
-              const canSubmitSamples = session.status === 'completed' && !session.samples_count
+              const canSubmitSamples = session.status === 'booked' && !session.samples_count
 
               return (
                 <div key={session.id} className="glass-card p-6">
@@ -155,7 +151,7 @@ export default function MySessionsPage() {
                           Lab Session
                         </h3>
                         <p className="text-sm text-slate-600">
-                          {session.lab_slots.date} • {session.lab_slots.start_time} - {session.lab_slots.end_time}
+                          {session.lab_slot.date} • {session.lab_slot.start_time} - {session.lab_slot.end_time}
                         </p>
                       </div>
                     </div>
@@ -168,13 +164,13 @@ export default function MySessionsPage() {
                     <div className="flex items-center space-x-3">
                       <Calendar className="w-4 h-4 text-slate-500" />
                       <span className="text-slate-700">
-                        {new Date(session.lab_slots.date).toLocaleDateString()}
+                        {new Date(session.lab_slot.date).toLocaleDateString()}
                       </span>
                     </div>
                     <div className="flex items-center space-x-3">
                       <Clock className="w-4 h-4 text-slate-500" />
                       <span className="text-slate-700">
-                        {session.lab_slots.start_time} - {session.lab_slots.end_time}
+                        {session.lab_slot.start_time} - {session.lab_slot.end_time}
                       </span>
                     </div>
                     <div className="flex items-center space-x-3">
@@ -197,7 +193,7 @@ export default function MySessionsPage() {
                   <div className="flex items-center space-x-3">
                     {canCancel && (
                       <button
-                        onClick={() => handleCancelBooking(session.id, session.lab_slots.date)}
+                        onClick={() => handleCancelBooking(session.id, session.lab_slot.date)}
                         className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
                       >
                         Cancel Session

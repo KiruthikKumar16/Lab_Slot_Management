@@ -9,7 +9,7 @@ import { Booking, LabSlot } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
 interface SessionWithSlot extends Booking {
-  lab_slots: LabSlot
+  lab_slot: LabSlot
 }
 
 export default function SubmitSamplesPage({ params }: { params: { bookingId: string } }) {
@@ -43,7 +43,7 @@ export default function SubmitSamplesPage({ params }: { params: { bookingId: str
         .from('bookings')
         .select(`
           *,
-          lab_slots (*)
+          lab_slot (*)
         `)
         .eq('id', params.bookingId)
         .eq('user_id', user?.id)
@@ -78,8 +78,8 @@ export default function SubmitSamplesPage({ params }: { params: { bookingId: str
     if (!session) return
 
     // Check if session is completed
-    const sessionDate = new Date(session.lab_slots.date)
-    const sessionEndTime = new Date(`${session.lab_slots.date}T${session.lab_slots.end_time}`)
+    const sessionDate = new Date(session.lab_slot.date)
+    const sessionEndTime = new Date(`${session.lab_slot.date}T${session.lab_slot.end_time}`)
     const now = new Date()
 
     if (now < sessionEndTime) {
@@ -130,10 +130,10 @@ export default function SubmitSamplesPage({ params }: { params: { bookingId: str
     return null
   }
 
-  const sessionDate = new Date(session.lab_slots.date)
-  const sessionEndTime = new Date(`${session.lab_slots.date}T${session.lab_slots.end_time}`)
+  const sessionDate = new Date(session.lab_slot.date)
+  const sessionEndTime = new Date(`${session.lab_slot.date}T${session.lab_slot.end_time}`)
   const now = new Date()
-  const canSubmit = now >= sessionEndTime && session.status === 'completed' && !session.samples_count
+  const canSubmit = now >= sessionEndTime && session.status === 'booked' && !session.samples_count
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
@@ -162,7 +162,7 @@ export default function SubmitSamplesPage({ params }: { params: { bookingId: str
               <div className="flex items-center space-x-3">
                 <Clock className="w-5 h-5 text-slate-500" />
                 <span className="text-slate-700">
-                  {session.lab_slots.start_time} - {session.lab_slots.end_time}
+                  {session.lab_slot.start_time} - {session.lab_slot.end_time}
                 </span>
               </div>
 
@@ -200,8 +200,8 @@ export default function SubmitSamplesPage({ params }: { params: { bookingId: str
                   <span className="text-yellow-800">
                     {session.samples_count 
                       ? 'Samples have already been submitted for this session.'
-                      : session.status !== 'completed'
-                      ? 'Session must be completed before submitting samples.'
+                                      : session.status !== 'booked'
+                ? 'Session must be booked before submitting samples.'
                       : now < sessionEndTime
                       ? 'Cannot submit samples before session ends.'
                       : 'Unable to submit samples at this time.'
