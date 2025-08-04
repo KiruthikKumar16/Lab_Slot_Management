@@ -42,10 +42,10 @@ export default function BookPage() {
     try {
       setLoading(true)
       
-      // Get next 4 weeks of dates
+      // Get only the next 7 days (current week)
       const dates: string[] = []
       const today = new Date()
-      for (let i = 0; i < 28; i++) {
+      for (let i = 0; i < 7; i++) {
         const date = new Date(today)
         date.setDate(today.getDate() + i)
         dates.push(date.toISOString().split('T')[0])
@@ -126,7 +126,7 @@ export default function BookPage() {
   const getAvailableDates = () => {
     const dates: string[] = []
     const today = new Date()
-    for (let i = 0; i < 28; i++) {
+    for (let i = 0; i < 7; i++) {
       const date = new Date(today)
       date.setDate(today.getDate() + i)
       dates.push(date.toISOString().split('T')[0])
