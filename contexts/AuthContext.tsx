@@ -107,9 +107,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const createAppUser = async (userId: string) => {
     try {
       const { data: authUser } = await supabase.auth.getUser()
-      if (!authUser.user) return
+      if (!authUser.user) {
+        console.error('No authenticated user found')
+        return
+      }
 
       console.log('Creating app user for:', authUser.user.email)
+      console.log('User ID:', userId)
 
       const { data, error } = await supabase
         .from('users')
@@ -123,13 +127,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error('Error creating app user:', error)
+        console.error('Error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        })
         return
       }
 
-      console.log('App user created:', data)
+      console.log('App user created successfully:', data)
       setAppUser(data)
     } catch (error) {
-      console.error('Error creating app user:', error)
+      console.error('Exception in createAppUser:', error)
     }
   }
 
