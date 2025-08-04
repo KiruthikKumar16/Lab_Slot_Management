@@ -18,9 +18,9 @@ export default function StudentDashboard() {
   const { user, appUser, isAdmin, signOut } = useAuth()
   const router = useRouter()
   const [stats, setStats] = useState<DashboardStats>({
-    totalSessions: 12,
-    completed: 8,
-    upcoming: 1
+    totalSessions: 0,
+    completed: 0,
+    upcoming: 0
   })
   const [nextSession, setNextSession] = useState<Booking | null>(null)
   const [recentSessions, setRecentSessions] = useState<Booking[]>([])
@@ -141,10 +141,10 @@ export default function StudentDashboard() {
 
             {/* User Info */}
             <div className="flex items-center space-x-3">
-              <div className="text-right">
-                <p className="text-sm font-medium text-slate-800">John Doe</p>
-                <p className="text-xs text-slate-600">Student • John.Doe</p>
-              </div>
+                             <div className="text-right">
+                 <p className="text-sm font-medium text-slate-800">{appUser?.email || user?.email || 'Student'}</p>
+                 <p className="text-xs text-slate-600">Student • {appUser?.email?.split('@')[0] || user?.email?.split('@')[0] || 'User'}</p>
+               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
                   <User className="w-4 h-4 text-white" />
@@ -162,9 +162,9 @@ export default function StudentDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-slate-800 mb-2">
-            Welcome back, John Doe
-          </h2>
+                     <h2 className="text-3xl font-bold text-slate-800 mb-2">
+             Welcome back, {appUser?.email?.split('@')[0] || user?.email?.split('@')[0] || 'Student'}
+           </h2>
           <p className="text-slate-600">
             Manage your lab sessions and track your progress
           </p>
@@ -222,14 +222,14 @@ export default function StudentDashboard() {
               <div className="space-y-3 mb-6">
                 <div className="flex items-center space-x-3">
                   <Calendar className="w-4 h-4 text-slate-500" />
-                  <span className="text-slate-700">2024-01-15</span>
+                  <span className="text-slate-700">{nextSession.lab_slot?.date ? new Date(nextSession.lab_slot.date).toLocaleDateString() : 'No date'}</span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Clock className="w-4 h-4 text-slate-500" />
-                  <span className="text-slate-700">14:00 - 16:00</span>
+                  <span className="text-slate-700">{nextSession.lab_slot?.start_time || '00:00'} - {nextSession.lab_slot?.end_time || '00:00'}</span>
                 </div>
                 <div className="text-slate-700 font-medium">
-                  Organic Chemistry Lab A
+                  Lab Session
                 </div>
               </div>
             ) : (
@@ -265,10 +265,10 @@ export default function StudentDashboard() {
                   <div key={session.id} className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                     <div className="flex-1">
                       <div className="font-medium text-slate-800">
-                        {session.lab_slot?.date ? `Lab Session ${index + 1}` : 'Organic Chemistry Lab A'}
+                        Lab Session {index + 1}
                       </div>
                       <div className="text-sm text-slate-600">
-                        {session.lab_slot?.date ? new Date(session.lab_slot.date).toLocaleDateString() : '2024-01-15'} • {session.lab_slot?.start_time || '14:00'} - {session.lab_slot?.end_time || '16:00'}
+                        {session.lab_slot?.date ? new Date(session.lab_slot.date).toLocaleDateString() : 'No date'} • {session.lab_slot?.start_time || '00:00'} - {session.lab_slot?.end_time || '00:00'}
                       </div>
                     </div>
                                          <span className={`px-2 py-1 text-xs rounded-full ${
