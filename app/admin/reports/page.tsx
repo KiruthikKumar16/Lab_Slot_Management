@@ -75,7 +75,7 @@ export default function AdminReports() {
       const attendanceRate = bookings.length > 0 ? ((completedBookings - noShows) / bookings.length) * 100 : 0
 
       // Calculate weekly bookings (last 4 weeks)
-      const weeklyBookings = []
+      const weeklyBookings: number[] = []
       for (let i = 3; i >= 0; i--) {
         const weekStart = new Date()
         weekStart.setDate(weekStart.getDate() - (i * 7))
@@ -91,7 +91,7 @@ export default function AdminReports() {
       }
 
       // Calculate monthly bookings (last 6 months)
-      const monthlyBookings = []
+      const monthlyBookings: number[] = []
       for (let i = 5; i >= 0; i--) {
         const monthStart = new Date()
         monthStart.setMonth(monthStart.getMonth() - i)
