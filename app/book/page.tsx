@@ -1,0 +1,271 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+import { useRouter } from 'next/navigation'
+import { Calendar, Clock, Users, MapPin, AlertTriangle } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { LabSlot } from '@/lib/supabase'
+import toast from 'react-hot-toast'
+
+interface SlotWithBookings extends LabSlot {
+  booked_count: number
+}
+
+export default function BookPage() {
+  const { user, isAdmin } = useAuth()
+  const router = useRouter()
+  const [slots, setSlots] = useState<SlotWithBookings[]>([])
+  const [loading, setLoading] = useState(true)
+  const [bookingLoading, setBookingLoading] = useState<string | null>(null)
+  const [selectedDate, setSelectedDate] = useState('')
+
+  const isSunday = new Date().getDay() === 0
+
+  useEffect(() => {
+    if (!user) {
+      router.push('/login')
+      return
+    }
+
+    if (isAdmin) {
+      router.push('/admin')
+      return
+    }
+
+    fetchSlots()
+  }, [user, isAdmin, router, selectedDate])
+
+  const fetchSlots = async () => {
+    try {
+      setLoading(true)
+      
+      // Get next 4 weeks of dates
+      const dates = []
+      const today = new Date()
+      for (let i = 0; i < 28; i++) {
+        const date = new Date(today)
+        date.setDate(today.getDate() + i)
+        dates.push(date.toISOString().split('T')[0])
+      }
+
+      let query = supabase
+        .from('lab_slots')
+        .select(`
+          *,
+          bookings!inner(count)
+        `)
+        .in('date', dates)
+        .order('date', { ascending: true })
+        .order('start_time', { ascending: true })
+
+      if (selectedDate) {
+        query = query.eq('date', selectedDate)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+
+      const slotsWithCount = data?.map(slot => ({
+        ...slot,
+        booked_count: slot.bookings?.[0]?.count || 0
+      })) || []
+
+      setSlots(slotsWithCount)
+    } catch (error) {
+      console.error('Error fetching slots:', error)
+      toast.error('Failed to load available slots')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleBookSlot = async (slotId: string) => {
+    if (!isSunday) {
+      toast.error('Bookings are only allowed on Sundays')
+      return
+    }
+
+    setBookingLoading(slotId)
+
+    try {
+      const response = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lab_slot_id: slotId })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to book slot')
+      }
+
+      toast.success('Slot booked successfully!')
+      fetchSlots()
+    } catch (error) {
+      console.error('Error booking slot:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to book slot')
+    } finally {
+      setBookingLoading(null)
+    }
+  }
+
+  const getAvailableDates = () => {
+    const dates = []
+    const today = new Date()
+    for (let i = 0; i < 28; i++) {
+      const date = new Date(today)
+      date.setDate(today.getDate() + i)
+      dates.push(date.toISOString().split('T')[0])
+    }
+    return dates
+  }
+
+  const getSlotsForDate = (date: string) => {
+    return slots.filter(slot => slot.date === date)
+  }
+
+  const isSlotAvailable = (slot: SlotWithBookings) => {
+    return slot.booked_count < slot.capacity
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading available slots...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent mb-2">
+            Book Lab Session
+          </h1>
+          <p className="text-slate-600 text-lg">Select an available time slot for your lab session</p>
+        </div>
+
+        {/* Sunday Warning */}
+        {!isSunday && (
+          <div className="glass-card p-6 mb-8">
+            <div className="flex items-center space-x-3">
+              <AlertTriangle className="w-6 h-6 text-orange-600" />
+              <div>
+                <h3 className="font-semibold text-orange-800">Booking Closed</h3>
+                <p className="text-orange-700">Bookings are only allowed on Sundays. Please check back on Sunday to book your lab session.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Date Filter */}
+        <div className="glass-card p-6 mb-8">
+          <div className="flex items-center space-x-4">
+            <Calendar className="w-5 h-5 text-slate-600" />
+            <label className="font-semibold text-slate-800">Select Date:</label>
+            <select
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="bg-white/60 backdrop-blur-sm border border-white/30 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800"
+            >
+              <option value="">All Available Dates</option>
+              {getAvailableDates().map(date => (
+                <option key={date} value={date}>
+                  {new Date(date).toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Available Slots Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {slots.length > 0 ? (
+            slots.map((slot) => {
+              const isAvailable = isSlotAvailable(slot)
+              const isFull = slot.booked_count >= slot.capacity
+              const isBooked = bookingLoading === slot.id
+
+              return (
+                <div key={slot.id} className="glass-card p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      isFull ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                    }`}>
+                      {isFull ? 'Full' : 'Available'}
+                    </span>
+                    <div className="text-right">
+                      <p className="text-sm text-slate-500">Capacity</p>
+                      <p className="font-bold text-slate-800">{slot.booked_count}/{slot.capacity}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 mb-6">
+                    <div className="flex items-center space-x-3">
+                      <Clock className="w-4 h-4 text-slate-500" />
+                      <span className="text-slate-700 font-medium">
+                        {slot.start_time} - {slot.end_time}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <MapPin className="w-4 h-4 text-slate-500" />
+                      <span className="text-slate-700 font-medium">Lab Room</span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <Users className="w-4 h-4 text-slate-500" />
+                      <span className="text-slate-700">
+                        {slot.capacity - slot.booked_count} spots available
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleBookSlot(slot.id)}
+                    disabled={!isAvailable || !isSunday || isBooked}
+                    className={`w-full py-3 rounded-xl font-semibold transition-all duration-300 ${
+                      isAvailable && isSunday
+                        ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white hover:from-blue-700 hover:to-indigo-800'
+                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    {isBooked ? (
+                      <div className="flex items-center justify-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Booking...</span>
+                      </div>
+                    ) : (
+                      'Book This Slot'
+                    )}
+                  </button>
+                </div>
+              )
+            })
+          ) : (
+            <div className="col-span-full">
+              <div className="glass-card p-8 text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Calendar className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold text-slate-800 mb-2">No Slots Available</h3>
+                <p className="text-slate-600">No lab slots are currently available for the selected criteria.</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+} 
