@@ -7,6 +7,7 @@ import { Calendar, Clock, Users, BookOpen, FileText, AlertTriangle, TestTube, Pl
 import { supabase } from '@/lib/supabase'
 import { Booking, LabSlot } from '@/lib/supabase'
 import toast from 'react-hot-toast'
+import Navigation from '@/components/Navigation'
 
 interface DashboardStats {
   totalSessions: number
@@ -105,58 +106,7 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      {/* Navigation Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-white/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo and Title */}
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg flex items-center justify-center">
-                <TestTube className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-slate-800">ChemLab Pro</h1>
-                <p className="text-xs text-slate-600">University Lab Management</p>
-              </div>
-            </div>
-
-            {/* Navigation Tabs */}
-            <div className="flex items-center space-x-1">
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium">
-                Dashboard
-              </button>
-              <button 
-                onClick={() => router.push('/book')}
-                className="px-4 py-2 text-slate-600 hover:text-slate-800 font-medium"
-              >
-                Book Slot
-              </button>
-              <button 
-                onClick={() => router.push('/my-sessions')}
-                className="px-4 py-2 text-slate-600 hover:text-slate-800 font-medium"
-              >
-                My Sessions
-              </button>
-            </div>
-
-            {/* User Info */}
-            <div className="flex items-center space-x-3">
-                             <div className="text-right">
-                 <p className="text-sm font-medium text-slate-800">{appUser?.email || user?.email || 'Student'}</p>
-                 <p className="text-xs text-slate-600">Student • {appUser?.email?.split('@')[0] || user?.email?.split('@')[0] || 'User'}</p>
-               </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
-                  <User className="w-4 h-4 text-white" />
-                </div>
-                <button onClick={handleSignOut} className="text-slate-600 hover:text-slate-800">
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Navigation currentPage="dashboard" />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

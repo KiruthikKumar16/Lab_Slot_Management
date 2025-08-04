@@ -7,6 +7,7 @@ import { Calendar, Clock, Users, MapPin, AlertTriangle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { LabSlot } from '@/lib/supabase'
 import toast from 'react-hot-toast'
+import Navigation from '@/components/Navigation'
 
 interface SlotWithBookings extends LabSlot {
   booked_count: number
@@ -144,6 +145,7 @@ export default function BookPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <Navigation currentPage="book" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">

@@ -7,6 +7,7 @@ import { Calendar, Clock, MapPin, AlertTriangle, CheckCircle, XCircle, FileText 
 import { supabase } from '@/lib/supabase'
 import { Booking, LabSlot } from '@/lib/supabase'
 import toast from 'react-hot-toast'
+import Navigation from '@/components/Navigation'
 
 interface SessionWithSlot extends Booking {
   lab_slot: LabSlot
@@ -122,6 +123,7 @@ export default function MySessionsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <Navigation currentPage="my-sessions" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
