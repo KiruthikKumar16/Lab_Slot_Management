@@ -310,7 +310,7 @@ export default function AdminDashboard() {
                 <div key={booking.id} className="flex items-center justify-between p-4 bg-white/50 rounded-lg">
                   <div className="flex-1">
                     <div className="font-medium text-slate-800">
-                      {booking.users?.email || 'Unknown Student'}
+                      {booking.user?.email || 'Unknown Student'}
                     </div>
                     <div className="text-sm text-slate-600">
                       {booking.lab_slots?.date} • {booking.lab_slots?.start_time} - {booking.lab_slots?.end_time}
