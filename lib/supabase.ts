@@ -26,8 +26,9 @@ export interface LabSlot {
   date: string
   start_time: string
   end_time: string
-  capacity: number
-  status: 'available' | 'full' | 'closed'
+  status: 'available' | 'booked' | 'closed'
+  booked_by?: string
+  remarks?: string
   created_at: string
 }
 

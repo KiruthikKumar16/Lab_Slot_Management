@@ -8,17 +8,16 @@ CREATE TABLE IF NOT EXISTS public.users (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create lab_slots table
-CREATE TABLE IF NOT EXISTS public.lab_slots (
+-- Lab Slots table
+CREATE TABLE IF NOT EXISTS lab_slots (
   id SERIAL PRIMARY KEY,
   date DATE NOT NULL,
   start_time TIME NOT NULL,
   end_time TIME NOT NULL,
-  max_capacity INTEGER DEFAULT 20,
-  current_bookings INTEGER DEFAULT 0,
-  status TEXT DEFAULT 'available' CHECK (status IN ('available', 'full', 'cancelled')),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  status TEXT DEFAULT 'available' CHECK (status IN ('available', 'booked', 'closed')),
+  booked_by UUID REFERENCES users(id),
+  remarks TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Create bookings table
