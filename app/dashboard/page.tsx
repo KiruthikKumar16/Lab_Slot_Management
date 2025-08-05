@@ -28,9 +28,19 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    console.log('=== DASHBOARD DEBUG ===')
     console.log('Dashboard useEffect - user:', !!user, 'appUser:', !!appUser, 'isAdmin:', isAdmin)
     console.log('User email:', user?.email)
     console.log('AppUser:', appUser)
+    console.log('Loading state:', loading)
+    
+    // Add timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.log('Loading timeout reached, forcing loading to false')
+        setLoading(false)
+      }
+    }, 15000) // 15 seconds timeout
     
     if (!user) {
       console.log('No user found, redirecting to login')
@@ -52,10 +62,15 @@ export default function StudentDashboard() {
 
     console.log('All checks passed, fetching dashboard data')
     fetchDashboardData()
-  }, [user, appUser, isAdmin, router])
+
+    return () => {
+      clearTimeout(timeout)
+    }
+  }, [user, appUser, isAdmin, router, loading])
 
   const fetchDashboardData = async () => {
     try {
+      console.log('=== FETCHING DASHBOARD DATA ===')
       console.log('Fetching dashboard data for user:', user?.email)
       
       // Get the user from our database using email
@@ -68,6 +83,7 @@ export default function StudentDashboard() {
       if (userError) {
         console.error('Error fetching user from database:', userError)
         toast.error('Failed to load user data')
+        setLoading(false) // Make sure to set loading to false
         return
       }
 
@@ -95,6 +111,8 @@ export default function StudentDashboard() {
       const completed = bookings?.filter(b => b.status === 'booked').length || 0
       const upcoming = bookings?.filter(b => b.status === 'booked').length || 0
 
+      console.log('Calculated stats:', { totalSessions, completed, upcoming })
+
       setStats({
         totalSessions,
         completed,
@@ -111,10 +129,13 @@ export default function StudentDashboard() {
       // Get recent sessions
       setRecentSessions(bookings?.slice(0, 4) || [])
 
+      console.log('Dashboard data loaded successfully')
+
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
       toast.error('Failed to load dashboard data')
     } finally {
+      console.log('Setting loading to false')
       setLoading(false)
     }
   }
