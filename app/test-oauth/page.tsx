@@ -1,11 +1,22 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+
+// Prevent static generation
+export const dynamic = 'force-dynamic'
 
 export default function TestOAuthPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [currentUrl, setCurrentUrl] = useState('')
+  const [origin, setOrigin] = useState('')
+
+  useEffect(() => {
+    // Set these values after component mounts (client-side only)
+    setCurrentUrl(window.location.href)
+    setOrigin(window.location.origin)
+  }, [])
 
   const testOAuth = async () => {
     setLoading(true)
@@ -61,8 +72,8 @@ export default function TestOAuthPage() {
           )}
 
           <div className="mt-6 text-sm text-slate-600">
-            <p>Current URL: {window.location.href}</p>
-            <p>Origin: {window.location.origin}</p>
+            <p>Current URL: {currentUrl || 'Loading...'}</p>
+            <p>Origin: {origin || 'Loading...'}</p>
           </div>
         </div>
       </div>
