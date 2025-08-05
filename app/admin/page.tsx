@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { Calendar, Clock, Users, BookOpen, FileText, AlertTriangle, TestTube, User, LogOut, Settings, BarChart3, Plus, ArrowRight } from 'lucide-react'
+import { Calendar, Clock, Users, BookOpen, FileText, AlertTriangle, TestTube, User, LogOut, Settings, BarChart3 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Booking, LabSlot, User as AppUser } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -117,15 +117,15 @@ export default function AdminDashboard() {
         {/* Welcome Section */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-slate-800 mb-2">
-            Welcome back, {appUser?.email?.split('@')[0] || user?.email?.split('@')[0] || 'Admin'}
+            Admin Dashboard
           </h2>
           <p className="text-slate-600">
             Manage lab sessions, students, and generate reports
           </p>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="glass-card p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -175,88 +175,99 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Quick Actions */}
-          <div className="glass-card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-slate-800">Quick Actions</h3>
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <button
+            onClick={() => router.push('/admin/lab-slots')}
+            className="glass-card p-6 text-left hover:shadow-lg transition-all duration-300"
+          >
+            <div className="flex items-center space-x-3 mb-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                <Settings className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="font-semibold text-slate-800">Manage Lab Slots</h3>
             </div>
-            
-            <div className="space-y-4">
-              <button
-                onClick={() => router.push('/admin/lab-slots')}
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-3 rounded-xl font-semibold flex items-center justify-center space-x-2 hover:from-blue-700 hover:to-indigo-800 transition-all duration-300"
-              >
-                <Settings className="w-5 h-5" />
-                <span>Manage Lab Slots</span>
-              </button>
+            <p className="text-sm text-slate-600">Create and manage lab session slots</p>
+          </button>
 
-              <button
-                onClick={() => router.push('/admin/bookings')}
-                className="w-full bg-gradient-to-r from-green-600 to-emerald-700 text-white py-3 rounded-xl font-semibold flex items-center justify-center space-x-2 hover:from-green-700 hover:to-emerald-800 transition-all duration-300"
-              >
-                <BookOpen className="w-5 h-5" />
-                <span>View All Bookings</span>
-              </button>
-
-              <button
-                onClick={() => router.push('/admin/students')}
-                className="w-full bg-gradient-to-r from-purple-600 to-violet-700 text-white py-3 rounded-xl font-semibold flex items-center justify-center space-x-2 hover:from-purple-700 hover:to-violet-800 transition-all duration-300"
-              >
-                <Users className="w-5 h-5" />
-                <span>Student Management</span>
-              </button>
-
-              <button
-                onClick={() => router.push('/admin/reports')}
-                className="w-full bg-gradient-to-r from-orange-600 to-red-700 text-white py-3 rounded-xl font-semibold flex items-center justify-center space-x-2 hover:from-orange-700 hover:to-red-800 transition-all duration-300"
-              >
-                <BarChart3 className="w-5 h-5" />
-                <span>Generate Reports</span>
-              </button>
+          <button
+            onClick={() => router.push('/admin/bookings')}
+            className="glass-card p-6 text-left hover:shadow-lg transition-all duration-300"
+          >
+            <div className="flex items-center space-x-3 mb-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
+                <BookOpen className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="font-semibold text-slate-800">View Bookings</h3>
             </div>
+            <p className="text-sm text-slate-600">Monitor all student bookings</p>
+          </button>
+
+          <button
+            onClick={() => router.push('/admin/students')}
+            className="glass-card p-6 text-left hover:shadow-lg transition-all duration-300"
+          >
+            <div className="flex items-center space-x-3 mb-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <Users className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="font-semibold text-slate-800">Student Management</h3>
+            </div>
+            <p className="text-sm text-slate-600">Manage student accounts</p>
+          </button>
+
+          <button
+            onClick={() => router.push('/admin/reports')}
+            className="glass-card p-6 text-left hover:shadow-lg transition-all duration-300"
+          >
+            <div className="flex items-center space-x-3 mb-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
+                <BarChart3 className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="font-semibold text-slate-800">Generate Reports</h3>
+            </div>
+            <p className="text-sm text-slate-600">Create attendance and analytics reports</p>
+          </button>
+        </div>
+
+        {/* Recent Bookings */}
+        <div className="glass-card p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-slate-800">Recent Bookings</h3>
+            <button 
+              onClick={() => router.push('/admin/bookings')}
+              className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+            >
+              View All
+            </button>
           </div>
-
-          {/* Recent Bookings */}
-          <div className="glass-card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-slate-800">Recent Bookings</h3>
-              <button 
-                onClick={() => router.push('/admin/bookings')}
-                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-              >
-                View All
-              </button>
-            </div>
-            
-            <div className="space-y-3">
-              {recentBookings.length > 0 ? (
-                recentBookings.map((booking) => (
-                  <div key={booking.id} className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
-                    <div className="flex-1">
-                      <div className="font-medium text-slate-800">
-                        {booking.user?.email || 'Unknown Student'}
-                      </div>
-                      <div className="text-sm text-slate-600">
-                        {booking.lab_slot?.date} • {booking.lab_slot?.start_time} - {booking.lab_slot?.end_time}
-                      </div>
+          
+          <div className="space-y-4">
+            {recentBookings.length > 0 ? (
+              recentBookings.map((booking) => (
+                <div key={booking.id} className="flex items-center justify-between p-4 bg-white/50 rounded-lg">
+                  <div className="flex-1">
+                    <div className="font-medium text-slate-800">
+                      {booking.user?.email || 'Unknown Student'}
                     </div>
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      booking.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                      booking.status === 'no-show' ? 'bg-orange-100 text-orange-800' :
-                      'bg-blue-100 text-blue-800'
-                    }`}>
-                      {booking.status}
-                    </span>
+                    <div className="text-sm text-slate-600">
+                      {booking.lab_slot?.date} • {booking.lab_slot?.start_time} - {booking.lab_slot?.end_time}
+                    </div>
                   </div>
-                ))
-              ) : (
-                <div className="text-slate-500 text-center py-4">
-                  No recent bookings
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    booking.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                    booking.status === 'no-show' ? 'bg-orange-100 text-orange-800' :
+                    'bg-blue-100 text-blue-800'
+                  }`}>
+                    {booking.status}
+                  </span>
                 </div>
-              )}
-            </div>
+              ))
+            ) : (
+              <div className="text-slate-500 text-center py-4">
+                No recent bookings
+              </div>
+            )}
           </div>
         </div>
       </div>
