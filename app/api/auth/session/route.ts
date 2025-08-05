@@ -14,7 +14,11 @@ export async function GET(request: NextRequest) {
 
     if (!accessToken) {
       console.log('No access token found, returning null user')
-      return NextResponse.json({ user: null })
+      const response = NextResponse.json({ user: null })
+      response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+      response.headers.set('Pragma', 'no-cache')
+      response.headers.set('Expires', '0')
+      return response
     }
 
     console.log('Verifying token with Google...')
@@ -41,7 +45,7 @@ export async function GET(request: NextRequest) {
     const userInfo = await userInfoResponse.json()
     console.log('User info received:', userInfo.email)
     
-    return NextResponse.json({
+    const response = NextResponse.json({
       user: {
         id: userInfo.id,
         email: userInfo.email,
@@ -49,9 +53,19 @@ export async function GET(request: NextRequest) {
         picture: userInfo.picture
       }
     })
+    
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+    
+    return response
 
   } catch (error) {
     console.error('Session check error:', error)
-    return NextResponse.json({ user: null })
+    const response = NextResponse.json({ user: null })
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+    return response
   }
 } 
