@@ -13,6 +13,7 @@ export default function TestOAuthPage() {
   const [origin, setOrigin] = useState('')
   const [redirectUri, setRedirectUri] = useState('')
   const [oauthUrl, setOauthUrl] = useState('')
+  const [actualRedirectUri, setActualRedirectUri] = useState('')
 
   useEffect(() => {
     // Set these values after component mounts (client-side only)
@@ -34,11 +35,7 @@ export default function TestOAuthPage() {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent'
-          }
+          redirectTo: `${window.location.origin}/auth/callback`
         }
       })
 
@@ -55,6 +52,13 @@ export default function TestOAuthPage() {
           const url = new URL(data.url)
           const redirectUriParam = url.searchParams.get('redirect_uri')
           console.log('Redirect URI in OAuth URL:', redirectUriParam)
+          setActualRedirectUri(redirectUriParam || 'Not found')
+          
+          // Also check for other OAuth parameters
+          console.log('All OAuth URL parameters:')
+          url.searchParams.forEach((value, key) => {
+            console.log(`${key}: ${value}`)
+          })
         }
       }
     } catch (err) {
@@ -63,6 +67,18 @@ export default function TestOAuthPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const testDirectGoogleOAuth = () => {
+    // Test direct Google OAuth URL to see if the issue is with Supabase
+    const clientId = 'your-google-client-id' // You'll need to get this from Google Cloud Console
+    const redirectUri = `${window.location.origin}/auth/callback`
+    const scope = 'email profile'
+    
+    const googleOAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}`
+    
+    console.log('Direct Google OAuth URL:', googleOAuthUrl)
+    alert('This would test direct Google OAuth. You need to add your Google Client ID to test this.')
   }
 
   return (
@@ -74,9 +90,16 @@ export default function TestOAuthPage() {
           <button
             onClick={testOAuth}
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-all duration-300 disabled:opacity-50"
+            className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-all duration-300 disabled:opacity-50 mb-4"
           >
-            {loading ? 'Testing...' : 'Test Google OAuth'}
+            {loading ? 'Testing...' : 'Test Supabase OAuth'}
+          </button>
+
+          <button
+            onClick={testDirectGoogleOAuth}
+            className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-all duration-300"
+          >
+            Test Direct Google OAuth
           </button>
 
           {error && (
@@ -89,6 +112,13 @@ export default function TestOAuthPage() {
             <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-blue-800 text-sm font-semibold">OAuth URL Generated:</p>
               <p className="text-blue-600 text-xs break-all mt-2">{oauthUrl}</p>
+            </div>
+          )}
+
+          {actualRedirectUri && (
+            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-yellow-800 text-sm font-semibold">Actual Redirect URI being sent:</p>
+              <p className="text-yellow-600 text-xs break-all mt-2">{actualRedirectUri}</p>
             </div>
           )}
 
