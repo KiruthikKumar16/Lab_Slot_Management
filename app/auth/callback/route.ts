@@ -12,11 +12,20 @@ export async function GET(request: Request) {
     console.log('All search params:', Object.fromEntries(requestUrl.searchParams.entries()))
     console.log('Headers:', Object.fromEntries(request.headers.entries()))
     
+    // Check for all possible OAuth parameters
     const code = requestUrl.searchParams.get('code')
     const accessToken = requestUrl.searchParams.get('access_token')
     const refreshToken = requestUrl.searchParams.get('refresh_token')
     const error = requestUrl.searchParams.get('error')
     const errorDescription = requestUrl.searchParams.get('error_description')
+    const state = requestUrl.searchParams.get('state')
+    
+    console.log('OAuth Parameters found:')
+    console.log('- code:', code ? 'Present' : 'Missing')
+    console.log('- access_token:', accessToken ? 'Present' : 'Missing')
+    console.log('- refresh_token:', refreshToken ? 'Present' : 'Missing')
+    console.log('- error:', error)
+    console.log('- state:', state ? 'Present' : 'Missing')
 
     // If there's an OAuth error, redirect to login with error
     if (error) {
