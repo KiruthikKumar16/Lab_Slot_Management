@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 
 export async function GET(request: NextRequest) {
+  console.log('=== SESSION API CALLED ===')
+  console.log('Request URL:', request.url)
+  console.log('Request method:', request.method)
+  
   try {
     console.log('=== SESSION API DEBUG ===')
     const cookieStore = cookies()
