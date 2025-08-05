@@ -38,8 +38,14 @@ export default function StudentDashboard() {
       return
     }
 
+    // If user exists but appUser doesn't, wait for AuthContext to create it
+    if (user && !appUser) {
+      console.log('User authenticated but appUser not loaded yet, waiting...')
+      return
+    }
+
     fetchDashboardData()
-  }, [user, isAdmin, router])
+  }, [user, appUser, isAdmin, router])
 
   const fetchDashboardData = async () => {
     try {

@@ -24,16 +24,21 @@ export async function middleware(req: NextRequest) {
       const user = session.user
       
       // Check if user exists in our app database
-      const { data: appUser } = await supabase
+      const { data: appUser, error: appUserError } = await supabase
         .from('users')
         .select('role')
         .eq('id', user.id)
         .single()
 
-      if (appUser) {
+      // If user exists in app database, redirect based on role
+      if (appUser && !appUserError) {
         const redirectUrl = appUser.role === 'admin' ? '/admin' : '/dashboard'
         return NextResponse.redirect(new URL(redirectUrl, req.url))
       }
+      
+      // If user doesn't exist in app database yet, let the app handle it
+      // (the AuthContext will create the user)
+      console.log('User authenticated but not in app database yet, letting app handle it')
     }
 
     // If user is not authenticated and trying to access protected routes
