@@ -1,12 +1,11 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, useRef } from 'react'
-import { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { User as AppUser } from '@/lib/supabase'
 
 interface AuthContextType {
-  user: User | null
+  user: any | null
   appUser: AppUser | null
   loading: boolean
   signInWithGoogle: () => Promise<void>
@@ -20,7 +19,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 const INACTIVITY_TIMEOUT = 30 // 30 minutes
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<any | null>(null)
   const [appUser, setAppUser] = useState<AppUser | null>(null)
   const [loading, setLoading] = useState(true)
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -48,32 +47,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  // Refresh session periodically to keep it alive
-  const refreshSession = async () => {
+  // Check Google OAuth session
+  const checkGoogleSession = async () => {
     try {
-      const { data: { session }, error } = await supabase.auth.getSession()
-      if (error) {
-        console.error('Error refreshing session:', error)
-        return
-      }
+      const response = await fetch('/api/auth/session')
+      const data = await response.json()
       
-      if (session) {
-        console.log('Session refreshed successfully')
-        // Update user state if needed
-        if (!user || user.id !== session.user.id) {
-          setUser(session.user)
-          await fetchAppUser(session.user.id)
-        }
+      if (data.user) {
+        setUser(data.user)
+        await fetchAppUser(data.user.email)
+        resetInactivityTimer()
+      } else {
+        setUser(null)
+        setAppUser(null)
       }
     } catch (error) {
-      console.error('Error in session refresh:', error)
+      console.error('Error checking session:', error)
+      setUser(null)
+      setAppUser(null)
     }
   }
 
   // Handle sign out
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut()
+      await fetch('/api/auth/signout', { method: 'POST' })
       setUser(null)
       setAppUser(null)
       if (inactivityTimerRef.current) {
@@ -101,28 +99,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const initializeAuth = async () => {
       try {
         console.log('Initializing auth...')
+        await checkGoogleSession()
         
-        // Get initial session
-        const { data: { session }, error } = await supabase.auth.getSession()
-        
-        if (error) {
-          console.error('Error getting session:', error)
-        }
-
         if (mounted) {
-          setUser(session?.user ?? null)
-          if (session?.user) {
-            console.log('User found in session, fetching app user...')
-            await fetchAppUser(session.user.id)
-            resetInactivityTimer() // Start inactivity timer
-            
-            // Start session refresh interval (every 5 minutes)
-            sessionRefreshIntervalRef.current = setInterval(refreshSession, 5 * 60 * 1000)
-          } else {
-            console.log('No user in session')
-          }
           setLoading(false)
-          console.log('Auth initialized, user:', session?.user?.email, 'loading:', false)
+          console.log('Auth initialized')
         }
       } catch (error) {
         console.error('Error initializing auth:', error)
@@ -133,46 +114,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     initializeAuth()
-
-    // Listen for auth changes with better error handling
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email)
-        
-        if (mounted) {
-          try {
-            if (session?.user) {
-              console.log('Setting user and fetching app user...')
-              setUser(session.user)
-              await fetchAppUser(session.user.id)
-              resetInactivityTimer() // Reset timer on auth state change
-              
-              // Start session refresh interval
-              if (sessionRefreshIntervalRef.current) {
-                clearInterval(sessionRefreshIntervalRef.current)
-              }
-              sessionRefreshIntervalRef.current = setInterval(refreshSession, 5 * 60 * 1000)
-            } else {
-              console.log('Clearing user data...')
-              setUser(null)
-              setAppUser(null)
-              if (inactivityTimerRef.current) {
-                clearTimeout(inactivityTimerRef.current)
-              }
-              if (sessionRefreshIntervalRef.current) {
-                clearInterval(sessionRefreshIntervalRef.current)
-              }
-            }
-          } catch (error) {
-            console.error('Error handling auth state change:', error)
-            // Don't log out on error, just log it
-          } finally {
-            console.log('Setting loading to false')
-            setLoading(false)
-          }
-        }
-      }
-    )
 
     // Set up activity listeners
     const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click']
@@ -192,7 +133,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       mounted = false
-      subscription.unsubscribe()
       clearTimeout(loadingTimeout)
       
       // Clean up activity listeners
@@ -209,26 +149,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         clearInterval(sessionRefreshIntervalRef.current)
       }
     }
-  }, [user])
+  }, [])
 
-  const fetchAppUser = async (userId: string) => {
+  const fetchAppUser = async (email: string) => {
     try {
-      console.log('Fetching app user for:', userId)
+      console.log('Fetching app user for:', email)
       
       const { data, error } = await supabase
         .from('users')
         .select('*')
-        .eq('id', userId)
+        .eq('email', email)
         .single()
 
       if (error) {
         // If user doesn't exist in our app table, create them
         if (error.code === 'PGRST116') {
           console.log('User not found in app table, creating...')
-          await createAppUser(userId)
+          await createAppUser(email)
         } else {
           console.error('Error fetching app user:', error)
-          // Don't throw error, just log it to prevent logout
         }
         return
       }
@@ -237,26 +176,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAppUser(data)
     } catch (error) {
       console.error('Error fetching app user:', error)
-      // Don't throw error, just log it to prevent logout
     }
   }
 
-  const createAppUser = async (userId: string) => {
+  const createAppUser = async (email: string) => {
     try {
-      const { data: authUser } = await supabase.auth.getUser()
-      if (!authUser.user) {
-        console.error('No authenticated user found')
-        return
-      }
-
-      console.log('Creating app user for:', authUser.user.email)
-      console.log('User ID:', userId)
+      console.log('Creating app user for:', email)
 
       const { data, error } = await supabase
         .from('users')
         .insert({
-          id: userId,
-          email: authUser.user.email,
+          email: email,
           role: 'student' // Default role
         })
         .select()
@@ -264,12 +194,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error('Error creating app user:', error)
-        console.error('Error details:', {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint
-        })
         return
       }
 

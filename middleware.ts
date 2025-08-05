@@ -1,15 +1,12 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
-
   try {
     // Skip middleware for auth callback route
     if (req.nextUrl.pathname.startsWith('/auth/callback')) {
       console.log('Skipping middleware for auth callback')
-      return res
+      return NextResponse.next()
     }
 
     console.log('Middleware processing:', req.nextUrl.pathname)
@@ -37,10 +34,10 @@ export async function middleware(req: NextRequest) {
       console.log('User has Google OAuth session, allowing access to:', req.nextUrl.pathname)
     }
 
-    return res
+    return NextResponse.next()
   } catch (error) {
     console.error('Middleware error:', error)
-    return res
+    return NextResponse.next()
   }
 }
 

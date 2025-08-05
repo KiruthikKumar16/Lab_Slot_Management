@@ -1,6 +1,5 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { supabase } from '@/lib/supabase'
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
@@ -80,41 +79,48 @@ export async function GET(request: Request) {
 
     console.log('User info received:', userInfo.email)
 
-    // Create or get user in Supabase
-    const supabase = createRouteHandlerClient({ cookies })
-    
-    // Try to sign in with custom token or create user
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email: userInfo.email,
-      password: 'google-oauth-user', // This won't work, we need a different approach
-    })
+    // Create or get user in our database
+    try {
+      const { data: existingUser, error: fetchError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', userInfo.email)
+        .single()
 
-    if (authError) {
-      // User doesn't exist, create them
-      console.log('Creating new user...')
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: userInfo.email,
-        password: Math.random().toString(36).slice(-10), // Generate random password
-        options: {
-          data: {
+      if (fetchError && fetchError.code === 'PGRST116') {
+        // User doesn't exist, create them
+        console.log('Creating new user...')
+        const { data: newUser, error: createError } = await supabase
+          .from('users')
+          .insert({
+            email: userInfo.email,
             name: userInfo.name,
-            picture: userInfo.picture,
-          }
+            role: 'student' // Default role
+          })
+          .select()
+          .single()
+
+        if (createError) {
+          console.error('Error creating user:', createError)
+          return NextResponse.redirect(`${requestUrl.origin}/login?error=${encodeURIComponent('Failed to create user')}`)
         }
-      })
 
-      if (signUpError) {
-        console.error('Sign up error:', signUpError)
-        return NextResponse.redirect(`${requestUrl.origin}/login?error=${encodeURIComponent('Failed to create user')}`)
+        console.log('User created successfully:', newUser)
+      } else if (fetchError) {
+        console.error('Error fetching user:', fetchError)
+        return NextResponse.redirect(`${requestUrl.origin}/login?error=${encodeURIComponent('Failed to fetch user')}`)
+      } else {
+        console.log('User already exists:', existingUser)
       }
-
-      console.log('User created successfully')
+    } catch (error) {
+      console.error('Database error:', error)
+      return NextResponse.redirect(`${requestUrl.origin}/login?error=${encodeURIComponent('Database error')}`)
     }
 
-    // Set session cookies manually
+    // Set session cookies
     const response = NextResponse.redirect(`${requestUrl.origin}`)
     
-    // Store tokens in cookies (for demo purposes - in production, use secure session management)
+    // Store tokens in cookies
     response.cookies.set('google_access_token', tokenData.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
