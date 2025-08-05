@@ -79,42 +79,6 @@ CREATE POLICY "Users can update own bookings" ON public.bookings
 CREATE POLICY "Admins can view all bookings" ON public.bookings
   FOR SELECT USING (true);
 
--- Function to update lab slot capacity
-CREATE OR REPLACE FUNCTION update_lab_slot_capacity()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF TG_OP = 'INSERT' THEN
-    UPDATE public.lab_slots 
-    SET current_bookings = current_bookings + 1,
-        status = CASE 
-          WHEN current_bookings + 1 >= max_capacity THEN 'full'
-          ELSE 'available'
-        END
-    WHERE id = NEW.lab_slot_id;
-    RETURN NEW;
-  ELSIF TG_OP = 'DELETE' THEN
-    UPDATE public.lab_slots 
-    SET current_bookings = current_bookings - 1,
-        status = CASE 
-          WHEN current_bookings - 1 < max_capacity THEN 'available'
-          ELSE 'full'
-        END
-    WHERE id = OLD.lab_slot_id;
-    RETURN OLD;
-  END IF;
-  RETURN NULL;
-END;
-$$ LANGUAGE plpgsql;
-
--- Drop existing trigger if it exists
-DROP TRIGGER IF EXISTS update_lab_slot_capacity_trigger ON public.bookings;
-
--- Trigger to update lab slot capacity
-CREATE TRIGGER update_lab_slot_capacity_trigger
-  AFTER INSERT OR DELETE ON public.bookings
-  FOR EACH ROW
-  EXECUTE FUNCTION update_lab_slot_capacity();
-
 -- Function to mark no-shows
 CREATE OR REPLACE FUNCTION mark_no_shows()
 RETURNS void AS $$
@@ -129,33 +93,18 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Insert sample lab slots for the next few Sundays
-INSERT INTO public.lab_slots (date, start_time, end_time, max_capacity, current_bookings, status) VALUES
-('2025-08-10', '09:00:00', '12:00:00', 20, 0, 'available'),
-('2025-08-10', '14:00:00', '17:00:00', 20, 0, 'available'),
-('2025-08-17', '09:00:00', '12:00:00', 20, 0, 'available'),
-('2025-08-17', '14:00:00', '17:00:00', 20, 0, 'available'),
-('2025-08-24', '09:00:00', '12:00:00', 20, 0, 'available'),
-('2025-08-24', '14:00:00', '17:00:00', 20, 0, 'available'),
-('2025-08-31', '09:00:00', '12:00:00', 20, 0, 'available'),
-('2025-08-31', '14:00:00', '17:00:00', 20, 0, 'available');
+-- Insert sample lab slots for the next few days
+INSERT INTO public.lab_slots (date, start_time, end_time, status, remarks) VALUES
+('2025-01-20', '09:00:00', '12:00:00', 'available', 'Morning session'),
+('2025-01-20', '14:00:00', '17:00:00', 'available', 'Afternoon session'),
+('2025-01-21', '09:00:00', '12:00:00', 'available', 'Morning session'),
+('2025-01-21', '14:00:00', '17:00:00', 'available', 'Afternoon session'),
+('2025-01-22', '09:00:00', '12:00:00', 'available', 'Morning session'),
+('2025-01-22', '14:00:00', '17:00:00', 'available', 'Afternoon session'),
+('2025-01-23', '09:00:00', '12:00:00', 'available', 'Morning session'),
+('2025-01-23', '14:00:00', '17:00:00', 'available', 'Afternoon session');
 
 -- Insert sample user (your email) - let Supabase generate the ID
 INSERT INTO public.users (email, name, role) VALUES
 ('kiruthikkumar.m2022@vitstudent.ac.in', 'Kiruthik Kumar', 'student')
-ON CONFLICT (email) DO NOTHING;
-
--- Insert sample bookings for testing (will be added after user creation)
--- Note: These will be added by the application when you book slots
-
--- Add sample bookings for the user (after user creation)
--- This creates bookings for the existing user
-INSERT INTO public.bookings (user_id, lab_slot_id, status, samples_submitted) 
-SELECT u.id, ls.id, 'booked', 5
-FROM public.users u, public.lab_slots ls 
-WHERE u.email = 'kiruthikkumar.m2022@vitstudent.ac.in' 
-AND ls.id IN (1, 3, 5, 7)
-ON CONFLICT DO NOTHING;
-
--- Update lab slot capacities based on bookings
-UPDATE public.lab_slots SET current_bookings = 1, status = 'available' WHERE id IN (1, 3, 5, 7); 
+ON CONFLICT (email) DO NOTHING; 

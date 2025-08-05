@@ -72,23 +72,44 @@ export default function AdminLabSlots() {
   }
 
   const handleAddSlot = async () => {
+    // Validate required fields
+    if (!newSlot.start_time || !newSlot.end_time) {
+      toast.error('Please fill in both start time and end time')
+      return
+    }
+
+    // Validate that end time is after start time
+    if (newSlot.start_time >= newSlot.end_time) {
+      toast.error('End time must be after start time')
+      return
+    }
+
     try {
-      const { error } = await supabase
+      console.log('Creating slot with data:', {
+        ...newSlot,
+        date: selectedDate
+      })
+      
+      const { data, error } = await supabase
         .from('lab_slots')
         .insert({
           ...newSlot,
           date: selectedDate
         })
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase error details:', error)
+        throw error
+      }
 
+      console.log('Slot created successfully:', data)
       toast.success('Lab slot created successfully')
       setShowAddForm(false)
       setNewSlot({ date: '', start_time: '', end_time: '', status: 'available', remarks: '' })
       fetchSlots()
     } catch (error) {
       console.error('Error creating slot:', error)
-      toast.error('Failed to create lab slot')
+      toast.error(`Failed to create lab slot: ${error.message || error}`)
     }
   }
 
