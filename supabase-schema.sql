@@ -128,4 +128,28 @@ BEGIN
       WHERE date < CURRENT_DATE
     );
 END;
-$$ LANGUAGE plpgsql; 
+$$ LANGUAGE plpgsql;
+
+-- Insert sample lab slots for the next few Sundays
+INSERT INTO public.lab_slots (date, start_time, end_time, max_capacity, current_bookings, status) VALUES
+('2025-08-10', '09:00:00', '12:00:00', 20, 0, 'available'),
+('2025-08-10', '14:00:00', '17:00:00', 20, 0, 'available'),
+('2025-08-17', '09:00:00', '12:00:00', 20, 0, 'available'),
+('2025-08-17', '14:00:00', '17:00:00', 20, 0, 'available'),
+('2025-08-24', '09:00:00', '12:00:00', 20, 0, 'available'),
+('2025-08-24', '14:00:00', '17:00:00', 20, 0, 'available'),
+('2025-08-31', '09:00:00', '12:00:00', 20, 0, 'available'),
+('2025-08-31', '14:00:00', '17:00:00', 20, 0, 'available');
+
+-- Insert sample bookings for testing
+INSERT INTO public.bookings (user_id, lab_slot_id, status, samples_submitted) VALUES
+(1, 1, 'booked', 5),
+(1, 3, 'booked', 3),
+(1, 5, 'cancelled', 0),
+(1, 7, 'no-show', 0);
+
+-- Update lab slot capacities based on bookings
+UPDATE public.lab_slots SET current_bookings = 1, status = 'available' WHERE id = 1;
+UPDATE public.lab_slots SET current_bookings = 1, status = 'available' WHERE id = 3;
+UPDATE public.lab_slots SET current_bookings = 1, status = 'available' WHERE id = 5;
+UPDATE public.lab_slots SET current_bookings = 1, status = 'available' WHERE id = 7; 
