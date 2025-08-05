@@ -90,6 +90,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true
 
+    // Add a timeout to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      if (mounted && loading) {
+        console.log('Loading timeout reached, forcing loading to false')
+        setLoading(false)
+      }
+    }, 10000) // 10 seconds timeout
+
     const initializeAuth = async () => {
       try {
         console.log('Initializing auth...')
@@ -104,14 +112,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (mounted) {
           setUser(session?.user ?? null)
           if (session?.user) {
+            console.log('User found in session, fetching app user...')
             await fetchAppUser(session.user.id)
             resetInactivityTimer() // Start inactivity timer
             
             // Start session refresh interval (every 5 minutes)
             sessionRefreshIntervalRef.current = setInterval(refreshSession, 5 * 60 * 1000)
+          } else {
+            console.log('No user in session')
           }
           setLoading(false)
-          console.log('Auth initialized, user:', session?.user?.email)
+          console.log('Auth initialized, user:', session?.user?.email, 'loading:', false)
         }
       } catch (error) {
         console.error('Error initializing auth:', error)
@@ -131,6 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (mounted) {
           try {
             if (session?.user) {
+              console.log('Setting user and fetching app user...')
               setUser(session.user)
               await fetchAppUser(session.user.id)
               resetInactivityTimer() // Reset timer on auth state change
@@ -141,6 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               }
               sessionRefreshIntervalRef.current = setInterval(refreshSession, 5 * 60 * 1000)
             } else {
+              console.log('Clearing user data...')
               setUser(null)
               setAppUser(null)
               if (inactivityTimerRef.current) {
@@ -154,6 +167,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.error('Error handling auth state change:', error)
             // Don't log out on error, just log it
           } finally {
+            console.log('Setting loading to false')
             setLoading(false)
           }
         }
@@ -179,6 +193,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       mounted = false
       subscription.unsubscribe()
+      clearTimeout(loadingTimeout)
       
       // Clean up activity listeners
       activityEvents.forEach(event => {
