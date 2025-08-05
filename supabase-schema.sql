@@ -37,6 +37,19 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lab_slots ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view own profile" ON public.users;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.users;
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.users;
+
+DROP POLICY IF EXISTS "Anyone can view lab slots" ON public.lab_slots;
+DROP POLICY IF EXISTS "Admins can manage lab slots" ON public.lab_slots;
+
+DROP POLICY IF EXISTS "Users can view own bookings" ON public.bookings;
+DROP POLICY IF EXISTS "Users can create own bookings" ON public.bookings;
+DROP POLICY IF EXISTS "Users can update own bookings" ON public.bookings;
+DROP POLICY IF EXISTS "Admins can view all bookings" ON public.bookings;
+
 -- RLS Policies for users table
 CREATE POLICY "Users can view own profile" ON public.users
   FOR SELECT USING (true);
@@ -93,6 +106,9 @@ BEGIN
   RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Drop existing trigger if it exists
+DROP TRIGGER IF EXISTS update_lab_slot_capacity_trigger ON public.bookings;
 
 -- Trigger to update lab slot capacity
 CREATE TRIGGER update_lab_slot_capacity_trigger
