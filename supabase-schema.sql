@@ -128,18 +128,4 @@ BEGIN
       WHERE date < CURRENT_DATE
     );
 END;
-$$ LANGUAGE plpgsql;
-
--- Insert sample data
-INSERT INTO public.users (email, name, role) VALUES
-  ('admin.lab@university.edu', 'Admin User', 'admin'),
-  ('john.doe@university.edu', 'John Doe', 'student')
-ON CONFLICT (email) DO NOTHING;
-
--- Insert sample lab slots for the next 4 weeks (Sundays only)
-INSERT INTO public.lab_slots (date, start_time, end_time, max_capacity) VALUES
-  (CURRENT_DATE + INTERVAL '1 day' * (7 - EXTRACT(DOW FROM CURRENT_DATE)::int), '09:00', '12:00', 20),
-  (CURRENT_DATE + INTERVAL '1 day' * (14 - EXTRACT(DOW FROM CURRENT_DATE)::int), '09:00', '12:00', 20),
-  (CURRENT_DATE + INTERVAL '1 day' * (21 - EXTRACT(DOW FROM CURRENT_DATE)::int), '09:00', '12:00', 20),
-  (CURRENT_DATE + INTERVAL '1 day' * (28 - EXTRACT(DOW FROM CURRENT_DATE)::int), '09:00', '12:00', 20)
-ON CONFLICT DO NOTHING; 
+$$ LANGUAGE plpgsql; 
