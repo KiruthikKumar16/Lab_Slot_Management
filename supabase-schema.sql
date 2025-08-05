@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS lab_slots (
   start_time TIME NOT NULL,
   end_time TIME NOT NULL,
   status TEXT DEFAULT 'available' CHECK (status IN ('available', 'booked', 'closed')),
-  booked_by UUID REFERENCES users(id),
+  booked_by INTEGER REFERENCES users(id),
   remarks TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

@@ -92,7 +92,7 @@ export default function AdminLabSlots() {
     }
   }
 
-  const handleDeleteSlot = async (slotId: string) => {
+  const handleDeleteSlot = async (slotId: number) => {
     if (!confirm('Are you sure you want to delete this slot?')) return
 
     try {
@@ -111,7 +111,7 @@ export default function AdminLabSlots() {
     }
   }
 
-  const handleCancelBooking = async (slotId: string) => {
+  const handleCancelBooking = async (slotId: number) => {
     if (!confirm('Are you sure you want to cancel this booking?')) return
 
     try {
@@ -133,7 +133,7 @@ export default function AdminLabSlots() {
     }
   }
 
-  const handleReopenSlot = async (slotId: string) => {
+  const handleReopenSlot = async (slotId: number) => {
     try {
       const { error } = await supabase
         .from('lab_slots')
@@ -352,7 +352,7 @@ export default function AdminLabSlots() {
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDeleteSlot(slot.id)}
+                          onClick={() => handleDeleteSlot(Number(slot.id))}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Delete slot"
                         >
@@ -371,7 +371,7 @@ export default function AdminLabSlots() {
                           <Eye className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleCancelBooking(slot.id)}
+                          onClick={() => handleCancelBooking(Number(slot.id))}
                           className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
                           title="Cancel booking"
                         >
@@ -383,14 +383,14 @@ export default function AdminLabSlots() {
                     {slot.status === 'closed' && (
                       <>
                         <button
-                          onClick={() => handleReopenSlot(slot.id)}
+                          onClick={() => handleReopenSlot(Number(slot.id))}
                           className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                           title="Reopen slot"
                         >
                           <RotateCcw className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDeleteSlot(slot.id)}
+                          onClick={() => handleDeleteSlot(Number(slot.id))}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Delete slot"
                         >

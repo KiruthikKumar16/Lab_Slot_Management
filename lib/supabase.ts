@@ -15,7 +15,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Types for our database
 export interface User {
-  id: string
+  id: number
   email: string
   role: 'admin' | 'student'
   created_at: string
@@ -27,15 +27,15 @@ export interface LabSlot {
   start_time: string
   end_time: string
   status: 'available' | 'booked' | 'closed'
-  booked_by?: string
+  booked_by?: number
   remarks?: string
   created_at: string
 }
 
 export interface Booking {
   id: string
-  user_id: string
-  lab_slot_id: string
+  user_id: number
+  lab_slot_id: number
   booking_time: string
   status: 'booked' | 'cancelled' | 'no-show'
   checkin_time?: string
