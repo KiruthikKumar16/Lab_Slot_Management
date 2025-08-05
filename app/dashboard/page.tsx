@@ -28,12 +28,16 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    console.log('Dashboard useEffect - user:', !!user, 'appUser:', !!appUser, 'isAdmin:', isAdmin)
+    
     if (!user) {
+      console.log('No user found, redirecting to login')
       router.push('/login')
       return
     }
 
     if (isAdmin) {
+      console.log('User is admin, redirecting to admin')
       router.push('/admin')
       return
     }
@@ -44,6 +48,7 @@ export default function StudentDashboard() {
       return
     }
 
+    console.log('All checks passed, fetching dashboard data')
     fetchDashboardData()
   }, [user, appUser, isAdmin, router])
 

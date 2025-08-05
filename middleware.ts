@@ -9,8 +9,11 @@ export async function middleware(req: NextRequest) {
   try {
     // Skip middleware for auth callback route
     if (req.nextUrl.pathname.startsWith('/auth/callback')) {
+      console.log('Skipping middleware for auth callback')
       return res
     }
+
+    console.log('Middleware processing:', req.nextUrl.pathname)
 
     // Refresh session if expired - required for Server Components
     const { data: { session }, error } = await supabase.auth.getSession()
@@ -19,9 +22,12 @@ export async function middleware(req: NextRequest) {
       console.error('Middleware session error:', error)
     }
 
+    console.log('Session found:', !!session, 'User:', session?.user?.email)
+
     // If user is on login page but has a valid session, redirect to appropriate page
     if (session && req.nextUrl.pathname === '/login') {
       const user = session.user
+      console.log('User on login page with session, checking app database...')
       
       // Check if user exists in our app database
       const { data: appUser, error: appUserError } = await supabase
@@ -33,6 +39,7 @@ export async function middleware(req: NextRequest) {
       // If user exists in app database, redirect based on role
       if (appUser && !appUserError) {
         const redirectUrl = appUser.role === 'admin' ? '/admin' : '/dashboard'
+        console.log('Redirecting authenticated user to:', redirectUrl)
         return NextResponse.redirect(new URL(redirectUrl, req.url))
       }
       
@@ -43,7 +50,13 @@ export async function middleware(req: NextRequest) {
 
     // If user is not authenticated and trying to access protected routes
     if (!session && req.nextUrl.pathname !== '/login' && req.nextUrl.pathname !== '/') {
+      console.log('No session found, redirecting to login')
       return NextResponse.redirect(new URL('/login', req.url))
+    }
+
+    // If user has session and is trying to access protected routes, allow it
+    if (session && req.nextUrl.pathname !== '/login' && req.nextUrl.pathname !== '/') {
+      console.log('User has session, allowing access to:', req.nextUrl.pathname)
     }
 
     return res
