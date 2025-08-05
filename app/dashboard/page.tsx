@@ -41,6 +41,11 @@ export default function StudentDashboard() {
         const response = await fetch('/api/auth/session')
         const data = await response.json()
         console.log('Manual session response:', data)
+        
+        // Also check the response status
+        console.log('Session response status:', response.status)
+        console.log('Session response headers:', Object.fromEntries(response.headers.entries()))
+        
       } catch (error) {
         console.error('Manual session check error:', error)
       }

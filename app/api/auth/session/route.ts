@@ -26,9 +26,11 @@ export async function GET(request: NextRequest) {
     })
 
     console.log('Google response status:', userInfoResponse.status)
+    console.log('Google response headers:', Object.fromEntries(userInfoResponse.headers.entries()))
 
     if (!userInfoResponse.ok) {
       console.log('Token is invalid, clearing cookies')
+      console.log('Google error response:', await userInfoResponse.text())
       // Token is invalid, clear cookies
       const response = NextResponse.json({ user: null })
       response.cookies.delete('google_access_token')
