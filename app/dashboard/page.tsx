@@ -29,6 +29,8 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     console.log('Dashboard useEffect - user:', !!user, 'appUser:', !!appUser, 'isAdmin:', isAdmin)
+    console.log('User email:', user?.email)
+    console.log('AppUser:', appUser)
     
     if (!user) {
       console.log('No user found, redirecting to login')
@@ -54,22 +56,44 @@ export default function StudentDashboard() {
 
   const fetchDashboardData = async () => {
     try {
-             // Fetch user's bookings
-       const { data: bookings, error } = await supabase
-         .from('bookings')
-         .select(`
-           *,
-           lab_slot (*)
-         `)
-         .eq('user_id', user?.id)
-         .order('created_at', { ascending: false })
+      console.log('Fetching dashboard data for user:', user?.email)
+      
+      // Get the user from our database using email
+      const { data: dbUser, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', user?.email)
+        .single()
 
-      if (error) throw error
+      if (userError) {
+        console.error('Error fetching user from database:', userError)
+        toast.error('Failed to load user data')
+        return
+      }
 
-             // Calculate stats
-       const totalSessions = bookings?.length || 0
-       const completed = bookings?.filter(b => b.status === 'booked').length || 0
-       const upcoming = bookings?.filter(b => b.status === 'booked').length || 0
+      console.log('Found user in database:', dbUser)
+
+      // Fetch user's bookings using the database user ID
+      const { data: bookings, error } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          lab_slot (*)
+        `)
+        .eq('user_id', dbUser.id)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching bookings:', error)
+        throw error
+      }
+
+      console.log('Fetched bookings:', bookings)
+
+      // Calculate stats
+      const totalSessions = bookings?.length || 0
+      const completed = bookings?.filter(b => b.status === 'booked').length || 0
+      const upcoming = bookings?.filter(b => b.status === 'booked').length || 0
 
       setStats({
         totalSessions,
@@ -77,11 +101,11 @@ export default function StudentDashboard() {
         upcoming
       })
 
-             // Find next session
-       const next = bookings?.find(b => 
-         b.status === 'booked' && 
-         new Date(b.lab_slot.date) > new Date()
-       )
+      // Find next session
+      const next = bookings?.find(b => 
+        b.status === 'booked' && 
+        new Date(b.lab_slot.date) > new Date()
+      )
       setNextSession(next || null)
 
       // Get recent sessions
