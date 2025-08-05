@@ -4,15 +4,13 @@ import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
-  
   try {
-    // Log all search parameters for debugging
+    // Log all parameters for debugging
     console.log('=== AUTH CALLBACK DEBUG ===')
     console.log('Full URL:', requestUrl.toString())
     console.log('All search params:', Object.fromEntries(requestUrl.searchParams.entries()))
     console.log('Headers:', Object.fromEntries(request.headers.entries()))
     
-    // Check for all possible OAuth parameters
     const code = requestUrl.searchParams.get('code')
     const accessToken = requestUrl.searchParams.get('access_token')
     const refreshToken = requestUrl.searchParams.get('refresh_token')
@@ -27,40 +25,92 @@ export async function GET(request: Request) {
     console.log('- error:', error)
     console.log('- state:', state ? 'Present' : 'Missing')
 
-    // If there's an OAuth error, redirect to login with error
     if (error) {
       console.error('OAuth error:', error, errorDescription)
-      return NextResponse.redirect(`${requestUrl.origin}/login?error=oauth_${error}`)
+      return NextResponse.redirect(`${requestUrl.origin}/login?error=${encodeURIComponent(error)}`)
     }
 
     const supabase = createRouteHandlerClient({ cookies })
 
-    // Try to exchange code for session
     if (code) {
-      console.log('Attempting to exchange code for session...')
+      console.log('Processing OAuth code...')
       const { data, error } = await supabase.auth.exchangeCodeForSession(code)
       
       if (error) {
-        console.error('Error exchanging code:', error)
-        return NextResponse.redirect(`${requestUrl.origin}/login?error=auth_failed`)
+        console.error('Code exchange error:', error)
+        return NextResponse.redirect(`${requestUrl.origin}/login?error=${encodeURIComponent(error.message)}`)
       }
-      
-      console.log('Code exchanged successfully')
-      console.log('Session user:', data.session?.user?.email)
-      
-      if (data.session?.user) {
-        // Redirect to home page and let it handle the routing
-        console.log('Redirecting to home page...')
-        return NextResponse.redirect(`${requestUrl.origin}`)
-      }
-    }
 
-    // If no code or session exchange failed, redirect to home
-    console.log('No valid authentication found, redirecting to home...')
-    return NextResponse.redirect(`${requestUrl.origin}`)
-    
+      if (data.session?.user) {
+        console.log('Session established successfully for user:', data.session.user.email)
+        
+        // Set session cookies properly
+        const response = NextResponse.redirect(`${requestUrl.origin}`)
+        
+        // Set the session cookie
+        response.cookies.set('sb-access-token', data.session.access_token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 7 // 7 days
+        })
+        
+        response.cookies.set('sb-refresh-token', data.session.refresh_token!, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 7 // 7 days
+        })
+        
+        return response
+      }
+      
+      console.log('No session in exchange response')
+      return NextResponse.redirect(`${requestUrl.origin}`)
+    } else if (accessToken && refreshToken) {
+      console.log('Processing direct tokens...')
+      const { data, error } = await supabase.auth.setSession({ 
+        access_token: accessToken, 
+        refresh_token: refreshToken 
+      })
+      
+      if (error) {
+        console.error('Set session error:', error)
+        return NextResponse.redirect(`${requestUrl.origin}/login?error=${encodeURIComponent(error.message)}`)
+      }
+
+      if (data.session?.user) {
+        console.log('Session set successfully for user:', data.session.user.email)
+        
+        // Set session cookies properly
+        const response = NextResponse.redirect(`${requestUrl.origin}`)
+        
+        // Set the session cookie
+        response.cookies.set('sb-access-token', data.session.access_token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 7 // 7 days
+        })
+        
+        response.cookies.set('sb-refresh-token', data.session.refresh_token!, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 7 // 7 days
+        })
+        
+        return response
+      }
+      
+      console.log('No session in set session response')
+      return NextResponse.redirect(`${requestUrl.origin}`)
+    } else {
+      console.log('No tokens found, redirecting to home')
+      return NextResponse.redirect(`${requestUrl.origin}`)
+    }
   } catch (error) {
     console.error('Auth callback error:', error)
-    return NextResponse.redirect(`${requestUrl.origin}/login?error=unknown`)
+    return NextResponse.redirect(`${requestUrl.origin}/login?error=${encodeURIComponent('Authentication failed')}`)
   }
 } 

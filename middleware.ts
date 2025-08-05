@@ -15,37 +15,18 @@ export async function middleware(req: NextRequest) {
 
     console.log('Middleware processing:', req.nextUrl.pathname)
 
-    // TEMPORARY: Skip middleware for dashboard to test if session detection is the issue
-    if (req.nextUrl.pathname === '/dashboard') {
-      console.log('Temporarily allowing dashboard access to test session detection')
-      return res
-    }
-
-    // Try to refresh the session first
+    // Get session without trying to refresh if missing
     const { data: { session }, error } = await supabase.auth.getSession()
     
     if (error) {
       console.error('Middleware session error:', error)
     }
 
-    // If no session found, try to refresh it
-    if (!session) {
-      console.log('No session found, attempting to refresh...')
-      const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession()
-      
-      if (refreshError) {
-        console.error('Session refresh error:', refreshError)
-      } else if (refreshedSession) {
-        console.log('Session refreshed successfully')
-      }
-    }
-
-    const currentSession = session || (await supabase.auth.getSession()).data.session
-    console.log('Final session check - Session found:', !!currentSession, 'User:', currentSession?.user?.email)
+    console.log('Session check - Session found:', !!session, 'User:', session?.user?.email)
 
     // If user is on login page but has a valid session, redirect to appropriate page
-    if (currentSession && req.nextUrl.pathname === '/login') {
-      const user = currentSession.user
+    if (session && req.nextUrl.pathname === '/login') {
+      const user = session.user
       console.log('User on login page with session, checking app database...')
       
       // Check if user exists in our app database
@@ -68,13 +49,13 @@ export async function middleware(req: NextRequest) {
     }
 
     // If user is not authenticated and trying to access protected routes
-    if (!currentSession && req.nextUrl.pathname !== '/login' && req.nextUrl.pathname !== '/') {
+    if (!session && req.nextUrl.pathname !== '/login' && req.nextUrl.pathname !== '/') {
       console.log('No session found, redirecting to login')
       return NextResponse.redirect(new URL('/login', req.url))
     }
 
     // If user has session and is trying to access protected routes, allow it
-    if (currentSession && req.nextUrl.pathname !== '/login' && req.nextUrl.pathname !== '/') {
+    if (session && req.nextUrl.pathname !== '/login' && req.nextUrl.pathname !== '/') {
       console.log('User has session, allowing access to:', req.nextUrl.pathname)
     }
 
