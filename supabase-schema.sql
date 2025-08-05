@@ -1,6 +1,3 @@
--- Enable Row Level Security
-ALTER DATABASE postgres SET "app.jwt_secret" TO 'your-jwt-secret';
-
 -- Create users table (without Supabase auth dependency)
 CREATE TABLE IF NOT EXISTS public.users (
   id SERIAL PRIMARY KEY,
