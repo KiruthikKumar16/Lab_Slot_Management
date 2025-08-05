@@ -4,7 +4,6 @@ import type { NextRequest } from 'next/server'
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
-  const supabase = createMiddlewareClient({ req, res })
 
   try {
     // Skip middleware for auth callback route
@@ -15,48 +14,27 @@ export async function middleware(req: NextRequest) {
 
     console.log('Middleware processing:', req.nextUrl.pathname)
 
-    // Get session without trying to refresh if missing
-    const { data: { session }, error } = await supabase.auth.getSession()
-    
-    if (error) {
-      console.error('Middleware session error:', error)
-    }
+    // Check for Google OAuth session cookies
+    const googleAccessToken = req.cookies.get('google_access_token')?.value
+    const googleRefreshToken = req.cookies.get('google_refresh_token')?.value
 
-    console.log('Session check - Session found:', !!session, 'User:', session?.user?.email)
+    console.log('Google OAuth session check - Access token:', !!googleAccessToken, 'Refresh token:', !!googleRefreshToken)
 
-    // If user is on login page but has a valid session, redirect to appropriate page
-    if (session && req.nextUrl.pathname === '/login') {
-      const user = session.user
-      console.log('User on login page with session, checking app database...')
-      
-      // Check if user exists in our app database
-      const { data: appUser, error: appUserError } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-
-      // If user exists in app database, redirect based on role
-      if (appUser && !appUserError) {
-        const redirectUrl = appUser.role === 'admin' ? '/admin' : '/dashboard'
-        console.log('Redirecting authenticated user to:', redirectUrl)
-        return NextResponse.redirect(new URL(redirectUrl, req.url))
-      }
-      
-      // If user doesn't exist in app database yet, let the app handle it
-      // (the AuthContext will create the user)
-      console.log('User authenticated but not in app database yet, letting app handle it')
+    // If user is on login page but has valid Google OAuth tokens, redirect to appropriate page
+    if (googleAccessToken && req.nextUrl.pathname === '/login') {
+      console.log('User on login page with Google OAuth tokens, redirecting to dashboard')
+      return NextResponse.redirect(new URL('/dashboard', req.url))
     }
 
     // If user is not authenticated and trying to access protected routes
-    if (!session && req.nextUrl.pathname !== '/login' && req.nextUrl.pathname !== '/') {
-      console.log('No session found, redirecting to login')
+    if (!googleAccessToken && req.nextUrl.pathname !== '/login' && req.nextUrl.pathname !== '/') {
+      console.log('No Google OAuth session found, redirecting to login')
       return NextResponse.redirect(new URL('/login', req.url))
     }
 
-    // If user has session and is trying to access protected routes, allow it
-    if (session && req.nextUrl.pathname !== '/login' && req.nextUrl.pathname !== '/') {
-      console.log('User has session, allowing access to:', req.nextUrl.pathname)
+    // If user has Google OAuth session and is trying to access protected routes, allow it
+    if (googleAccessToken && req.nextUrl.pathname !== '/login' && req.nextUrl.pathname !== '/') {
+      console.log('User has Google OAuth session, allowing access to:', req.nextUrl.pathname)
     }
 
     return res

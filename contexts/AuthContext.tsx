@@ -281,21 +281,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signInWithGoogle = async () => {
-    console.log('=== OAuth Debug ===')
+    console.log('=== Direct Google OAuth ===')
     console.log('Window origin:', window.location.origin)
     
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google'
-    })
-
-    if (error) {
-      console.error('OAuth error:', error)
-      throw error
-    } else {
-      console.log('OAuth URL generated:', data.url)
-      // Open the OAuth URL
-      window.location.href = data.url
+    // Direct Google OAuth implementation
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+    if (!clientId) {
+      console.error('Google Client ID not configured')
+      throw new Error('Google OAuth not configured')
     }
+    
+    const redirectUri = `${window.location.origin}/auth/callback`
+    const scope = 'email profile'
+    const responseType = 'code'
+    
+    const googleOAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=${responseType}&scope=${encodeURIComponent(scope)}&access_type=offline&prompt=consent`
+    
+    console.log('Direct Google OAuth URL:', googleOAuthUrl)
+    window.location.href = googleOAuthUrl
   }
 
   const signOut = async () => {
