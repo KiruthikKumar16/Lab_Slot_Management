@@ -146,13 +146,21 @@ export default function StudentDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-                     <h2 className="text-3xl font-bold text-slate-800 mb-2">
-             Welcome back, {appUser?.email?.split('@')[0] || user?.email?.split('@')[0] || 'Student'}
-           </h2>
+          <h2 className="text-3xl font-bold text-slate-800 mb-2">
+            Welcome back, {appUser?.email?.split('@')[0] || user?.email?.split('@')[0] || 'Student'}
+          </h2>
           <p className="text-slate-600">
             Manage your lab sessions and track your progress
           </p>
-
+          
+          {/* Temporary debug info */}
+          <div className="mt-4 p-4 bg-yellow-100 rounded-lg text-sm">
+            <p><strong>Debug Info:</strong></p>
+            <p>User Email: {user?.email || 'No user email'}</p>
+            <p>AppUser Email: {appUser?.email || 'No appUser email'}</p>
+            <p>User Name: {user?.name || 'No user name'}</p>
+            <p>AppUser Role: {appUser?.role || 'No role'}</p>
+          </div>
         </div>
 
         {/* Summary Cards */}

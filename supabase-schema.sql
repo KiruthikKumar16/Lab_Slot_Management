@@ -141,6 +141,11 @@ INSERT INTO public.lab_slots (date, start_time, end_time, max_capacity, current_
 ('2025-08-31', '09:00:00', '12:00:00', 20, 0, 'available'),
 ('2025-08-31', '14:00:00', '17:00:00', 20, 0, 'available');
 
+-- Insert sample user (your email)
+INSERT INTO public.users (id, email, name, role) VALUES
+(1, 'kiruthikkumar.m2022@vitstudent.ac.in', 'Kiruthik Kumar', 'student')
+ON CONFLICT (email) DO NOTHING;
+
 -- Insert sample bookings for testing
 INSERT INTO public.bookings (user_id, lab_slot_id, status, samples_submitted) VALUES
 (1, 1, 'booked', 5),
