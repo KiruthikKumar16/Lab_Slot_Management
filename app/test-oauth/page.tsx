@@ -29,13 +29,13 @@ export default function TestOAuthPage() {
     try {
       console.log('=== OAuth Debug Info ===')
       console.log('Current origin:', window.location.origin)
-      console.log('Redirect URI being sent:', `${window.location.origin}/auth/callback`)
-      console.log('Full redirect URI:', `${window.location.origin}/auth/callback`)
+      console.log('Redirect URI being sent:', 'https://lab-slot-management.vercel.app/auth/callback')
+      console.log('Full redirect URI:', 'https://lab-slot-management.vercel.app/auth/callback')
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo: 'https://lab-slot-management.vercel.app/auth/callback'
         }
       })
 
