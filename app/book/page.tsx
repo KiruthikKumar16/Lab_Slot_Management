@@ -178,7 +178,7 @@ export default function BookPage() {
             <select
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-white/60 backdrop-blur-sm border border-white/30 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800"
+              className="bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800"
             >
               <option value="">All Available Dates</option>
               {getAvailableDates().map(date => (

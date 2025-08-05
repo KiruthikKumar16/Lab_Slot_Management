@@ -273,7 +273,7 @@ export default function AdminLabSlots() {
                 <select
                   value={newSlot.status}
                   onChange={(e) => setNewSlot({ ...newSlot, status: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 text-slate-800"
                 >
                   <option value="available">Available</option>
                   <option value="closed">Closed</option>
