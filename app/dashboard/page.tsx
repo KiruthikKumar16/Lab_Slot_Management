@@ -152,6 +152,16 @@ export default function StudentDashboard() {
           <p className="text-slate-600">
             Manage your lab sessions and track your progress
           </p>
+          
+          {/* Temporary debug info */}
+          <div className="mt-4 p-4 bg-yellow-100 rounded-lg text-sm">
+            <p><strong>Debug Info:</strong></p>
+            <p>User Email: {user?.email || 'No user email'}</p>
+            <p>AppUser Email: {appUser?.email || 'No appUser email'}</p>
+            <p>User Name: {user?.name || 'No user name'}</p>
+            <p>AppUser Role: {appUser?.role || 'No role'}</p>
+            <p>Loading: {loading ? 'true' : 'false'}</p>
+          </div>
         </div>
 
         {/* Summary Cards */}
