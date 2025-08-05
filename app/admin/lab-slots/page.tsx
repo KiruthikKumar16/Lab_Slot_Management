@@ -221,7 +221,7 @@ export default function AdminLabSlots() {
           <div className="flex items-center space-x-4">
             <button
               onClick={() => navigateDate('prev')}
-              className="p-2 hover:bg-slate-200 rounded-lg transition-colors"
+              className="p-2 hover:bg-slate-200 rounded-lg transition-colors text-slate-700"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -230,7 +230,7 @@ export default function AdminLabSlots() {
             </h2>
             <button
               onClick={() => navigateDate('next')}
-              className="p-2 hover:bg-slate-200 rounded-lg transition-colors"
+              className="p-2 hover:bg-slate-200 rounded-lg transition-colors text-slate-700"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -256,7 +256,7 @@ export default function AdminLabSlots() {
                   type="time"
                   value={newSlot.start_time}
                   onChange={(e) => setNewSlot({ ...newSlot, start_time: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-800"
                 />
               </div>
               <div>
@@ -265,7 +265,7 @@ export default function AdminLabSlots() {
                   type="time"
                   value={newSlot.end_time}
                   onChange={(e) => setNewSlot({ ...newSlot, end_time: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-800"
                 />
               </div>
               <div>
@@ -273,7 +273,7 @@ export default function AdminLabSlots() {
                 <select
                   value={newSlot.status}
                   onChange={(e) => setNewSlot({ ...newSlot, status: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 text-slate-800"
+                  className="w-full px-3 py-2 border border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-800"
                 >
                   <option value="available">Available</option>
                   <option value="closed">Closed</option>
@@ -287,7 +287,7 @@ export default function AdminLabSlots() {
                 value={newSlot.remarks}
                 onChange={(e) => setNewSlot({ ...newSlot, remarks: e.target.value })}
                 placeholder="Any additional notes..."
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-800"
               />
             </div>
             <div className="flex space-x-3 mt-4">
