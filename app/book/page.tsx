@@ -14,12 +14,12 @@ interface SlotWithBookings extends LabSlot {
 }
 
 export default function BookPage() {
-  const { user, isAdmin } = useAuth()
+  const { user } = useAuth()
   const router = useRouter()
   const [slots, setSlots] = useState<SlotWithBookings[]>([])
   const [loading, setLoading] = useState(true)
-  const [bookingLoading, setBookingLoading] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState('')
+  const [bookingLoading, setBookingLoading] = useState<string | null>(null)
 
   const isSunday = new Date().getDay() === 0
 
@@ -29,51 +29,42 @@ export default function BookPage() {
       return
     }
 
-    if (isAdmin) {
-      router.push('/admin')
-      return
-    }
-
     fetchSlots()
-  }, [user, isAdmin, router, selectedDate])
+  }, [user, router])
 
   const fetchSlots = async () => {
     try {
       setLoading(true)
       
-      // Get only the next 7 days (current week)
-      const dates: string[] = []
+      // Get next 7 days of slots
       const today = new Date()
+      const nextWeek: string[] = []
       for (let i = 0; i < 7; i++) {
         const date = new Date(today)
         date.setDate(today.getDate() + i)
-        dates.push(date.toISOString().split('T')[0])
+        nextWeek.push(date.toISOString().split('T')[0])
       }
 
-      let query = supabase
+      const { data, error } = await supabase
         .from('lab_slots')
         .select(`
           *,
           bookings!inner(count)
         `)
-        .in('date', dates)
+        .in('date', nextWeek)
+        .eq('status', 'available')
         .order('date', { ascending: true })
         .order('start_time', { ascending: true })
 
-      if (selectedDate) {
-        query = query.eq('date', selectedDate)
-      }
-
-      const { data, error } = await query
-
       if (error) throw error
 
-      const slotsWithCount = data?.map(slot => ({
+      // Process the data to get booked count
+      const processedSlots = (data || []).map(slot => ({
         ...slot,
         booked_count: slot.bookings?.[0]?.count || 0
-      })) || []
+      }))
 
-      setSlots(slotsWithCount)
+      setSlots(processedSlots)
     } catch (error) {
       console.error('Error fetching slots:', error)
       toast.error('Failed to load available slots')
@@ -83,31 +74,42 @@ export default function BookPage() {
   }
 
   const handleBookSlot = async (slotId: string) => {
-    if (!isSunday) {
-      toast.error('Bookings are only allowed on Sundays')
-      return
-    }
-
-    setBookingLoading(slotId)
+    if (!user) return
 
     try {
-      const response = await fetch('/api/bookings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lab_slot_id: slotId })
-      })
+      setBookingLoading(slotId)
 
-      const result = await response.json()
+      // First check if slot is still available
+      const { data: slotCheck, error: checkError } = await supabase
+        .from('lab_slots')
+        .select('status, booked_by')
+        .eq('id', slotId)
+        .single()
 
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to book slot')
+      if (checkError) throw checkError
+
+      if (slotCheck.status !== 'available' || slotCheck.booked_by) {
+        toast.error('This slot is no longer available')
+        fetchSlots()
+        return
       }
+
+      // Book the slot
+      const { error } = await supabase
+        .from('lab_slots')
+        .update({
+          status: 'booked',
+          booked_by: user.id
+        })
+        .eq('id', slotId)
+
+      if (error) throw error
 
       toast.success('Slot booked successfully!')
       fetchSlots()
     } catch (error) {
       console.error('Error booking slot:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to book slot')
+      toast.error('Failed to book slot')
     } finally {
       setBookingLoading(null)
     }
@@ -129,7 +131,7 @@ export default function BookPage() {
   }
 
   const isSlotAvailable = (slot: SlotWithBookings) => {
-    return slot.booked_count < slot.capacity
+    return slot.status === 'available' && !slot.booked_by
   }
 
   if (loading) {
@@ -198,21 +200,16 @@ export default function BookPage() {
           {slots.length > 0 ? (
             slots.map((slot) => {
               const isAvailable = isSlotAvailable(slot)
-              const isFull = slot.booked_count >= slot.capacity
               const isBooked = bookingLoading === slot.id
 
               return (
                 <div key={slot.id} className="glass-card p-6">
                   <div className="flex items-start justify-between mb-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      isFull ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                      isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                     }`}>
-                      {isFull ? 'Full' : 'Available'}
+                      {isAvailable ? 'Available' : 'Booked'}
                     </span>
-                    <div className="text-right">
-                      <p className="text-sm text-slate-500">Capacity</p>
-                      <p className="font-bold text-slate-800">{slot.booked_count}/{slot.capacity}</p>
-                    </div>
                   </div>
 
                   <div className="space-y-3 mb-6">
@@ -227,12 +224,6 @@ export default function BookPage() {
                       <span className="text-slate-700 font-medium">Lab Room</span>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <Users className="w-4 h-4 text-slate-500" />
-                      <span className="text-slate-700">
-                        {slot.capacity - slot.booked_count} spots available
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-3">
                       <Calendar className="w-4 h-4 text-slate-500" />
                       <span className="text-slate-700">
                         {new Date(slot.date).toLocaleDateString('en-US', { 
@@ -243,6 +234,12 @@ export default function BookPage() {
                         })}
                       </span>
                     </div>
+                    {slot.remarks && (
+                      <div className="flex items-center space-x-3">
+                        <AlertTriangle className="w-4 h-4 text-slate-500" />
+                        <span className="text-slate-600 text-sm">{slot.remarks}</span>
+                      </div>
+                    )}
                   </div>
 
                   <button
