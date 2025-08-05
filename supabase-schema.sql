@@ -141,20 +141,10 @@ INSERT INTO public.lab_slots (date, start_time, end_time, max_capacity, current_
 ('2025-08-31', '09:00:00', '12:00:00', 20, 0, 'available'),
 ('2025-08-31', '14:00:00', '17:00:00', 20, 0, 'available');
 
--- Insert sample user (your email)
-INSERT INTO public.users (id, email, name, role) VALUES
-(1, 'kiruthikkumar.m2022@vitstudent.ac.in', 'Kiruthik Kumar', 'student')
+-- Insert sample user (your email) - let Supabase generate the ID
+INSERT INTO public.users (email, name, role) VALUES
+('kiruthikkumar.m2022@vitstudent.ac.in', 'Kiruthik Kumar', 'student')
 ON CONFLICT (email) DO NOTHING;
 
--- Insert sample bookings for testing
-INSERT INTO public.bookings (user_id, lab_slot_id, status, samples_submitted) VALUES
-(1, 1, 'booked', 5),
-(1, 3, 'booked', 3),
-(1, 5, 'cancelled', 0),
-(1, 7, 'no-show', 0);
-
--- Update lab slot capacities based on bookings
-UPDATE public.lab_slots SET current_bookings = 1, status = 'available' WHERE id = 1;
-UPDATE public.lab_slots SET current_bookings = 1, status = 'available' WHERE id = 3;
-UPDATE public.lab_slots SET current_bookings = 1, status = 'available' WHERE id = 5;
-UPDATE public.lab_slots SET current_bookings = 1, status = 'available' WHERE id = 7; 
+-- Insert sample bookings for testing (will be added after user creation)
+-- Note: These will be added by the application when you book slots 

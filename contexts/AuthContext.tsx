@@ -50,19 +50,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Check Google OAuth session
   const checkGoogleSession = async () => {
     try {
-      console.log('=== CHECKING GOOGLE SESSION ===')
       const response = await fetch('/api/auth/session')
       const data = await response.json()
       
-      console.log('Session response:', data)
-      
       if (data.user) {
-        console.log('User found in session:', data.user.email)
         setUser(data.user)
         await fetchAppUser(data.user.email)
         resetInactivityTimer()
       } else {
-        console.log('No user in session')
         setUser(null)
         setAppUser(null)
       }
@@ -154,21 +149,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const fetchAppUser = async (email: string) => {
     try {
-      console.log('=== FETCHING APP USER ===')
-      console.log('Fetching app user for:', email)
-
       const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('email', email)
         .single()
 
-      console.log('Supabase response:', { data, error })
-
       if (error) {
         // If user doesn't exist in our app table, create them
         if (error.code === 'PGRST116') {
-          console.log('User not found in app table, creating...')
           await createAppUser(email)
         } else {
           console.error('Error fetching app user:', error)
@@ -176,7 +165,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
-      console.log('App user found:', data)
       setAppUser(data)
     } catch (error) {
       console.error('Error fetching app user:', error)
