@@ -1,14 +1,37 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import { supabase } from '@/lib/supabase'
 
 export async function POST(request: Request) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
-    
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
+    // Check Google OAuth session
+    const cookieStore = cookies()
+    const accessToken = cookieStore.get('google_access_token')?.value
+
+    if (!accessToken) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Verify token with Google
+    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { 'Authorization': `Bearer ${accessToken}` },
+    })
+
+    if (!userInfoResponse.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const userInfo = await userInfoResponse.json()
+
+    // Get user from database
+    const { data: dbUser, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', userInfo.email)
+      .single()
+
+    if (userError || !dbUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
     const { booking_id, samples_count, remarks } = await request.json()
@@ -30,14 +53,14 @@ export async function POST(request: Request) {
       .from('bookings')
       .select(`
         *,
-        lab_slots (
+        lab_slot (
           date,
           start_time,
           end_time
         )
       `)
       .eq('id', booking_id)
-      .eq('user_id', user.id)
+      .eq('user_id', dbUser.id)
       .single()
 
     if (bookingError || !booking) {
@@ -45,8 +68,8 @@ export async function POST(request: Request) {
     }
 
     // Check if session is completed
-    const sessionDate = new Date(booking.lab_slots.date)
-    const sessionEndTime = new Date(`${booking.lab_slots.date}T${booking.lab_slots.end_time}`)
+    const sessionDate = new Date(booking.lab_slot.date)
+    const sessionEndTime = new Date(`${booking.lab_slot.date}T${booking.lab_slot.end_time}`)
     const now = new Date()
 
     if (now < sessionEndTime) {

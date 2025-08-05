@@ -1,15 +1,37 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import { supabase } from '@/lib/supabase'
 
 export async function POST(request: Request) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
-    
-    // Check authentication
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
+    // Check Google OAuth session
+    const cookieStore = cookies()
+    const accessToken = cookieStore.get('google_access_token')?.value
+
+    if (!accessToken) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Verify token with Google
+    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { 'Authorization': `Bearer ${accessToken}` },
+    })
+
+    if (!userInfoResponse.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const userInfo = await userInfoResponse.json()
+
+    // Get user from database
+    const { data: dbUser, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', userInfo.email)
+      .single()
+
+    if (userError || !dbUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
     // Check if today is Sunday
@@ -53,7 +75,7 @@ export async function POST(request: Request) {
     const { data: existingBooking } = await supabase
       .from('bookings')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', dbUser.id)
       .eq('lab_slot_id', lab_slot_id)
       .eq('status', 'booked')
       .single()
@@ -70,11 +92,11 @@ export async function POST(request: Request) {
       .from('bookings')
       .select(`
         *,
-        lab_slots!inner(date)
+        lab_slot!inner(date)
       `)
-      .eq('user_id', user.id)
+      .eq('user_id', dbUser.id)
       .eq('status', 'booked')
-      .eq('lab_slots.date', slot.date)
+      .eq('lab_slot.date', slot.date)
       .single()
 
     if (sameDateBooking) {
@@ -88,7 +110,7 @@ export async function POST(request: Request) {
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .insert({
-        user_id: user.id,
+        user_id: dbUser.id,
         lab_slot_id,
         status: 'booked'
       })
@@ -112,11 +134,34 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
-    
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
+    // Check Google OAuth session
+    const cookieStore = cookies()
+    const accessToken = cookieStore.get('google_access_token')?.value
+
+    if (!accessToken) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Verify token with Google
+    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { 'Authorization': `Bearer ${accessToken}` },
+    })
+
+    if (!userInfoResponse.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const userInfo = await userInfoResponse.json()
+
+    // Get user from database
+    const { data: dbUser, error: userError } = await supabase
+      .from('users')
+      .select('id, role')
+      .eq('email', userInfo.email)
+      .single()
+
+    if (userError || !dbUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -126,26 +171,20 @@ export async function GET(request: Request) {
       .from('bookings')
       .select(`
         *,
-        lab_slots (*),
-        users!inner(email, role)
+        lab_slot (*),
+        user!inner(email, role)
       `)
 
     // If user_id is provided and user is admin, allow viewing other bookings
     if (user_id) {
-      const { data: currentUser } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-
-      if (currentUser?.role === 'admin') {
+      if (dbUser.role === 'admin') {
         query = query.eq('user_id', user_id)
       } else {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
       }
     } else {
       // Regular users can only see their own bookings
-      query = query.eq('user_id', user.id)
+      query = query.eq('user_id', dbUser.id)
     }
 
     const { data: bookings, error } = await query.order('created_at', { ascending: false })
