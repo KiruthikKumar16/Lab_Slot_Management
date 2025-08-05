@@ -34,6 +34,19 @@ export default function StudentDashboard() {
     console.log('AppUser:', appUser)
     console.log('Loading state:', loading)
     
+    // Manual session check
+    const checkSession = async () => {
+      try {
+        console.log('=== MANUAL SESSION CHECK ===')
+        const response = await fetch('/api/auth/session')
+        const data = await response.json()
+        console.log('Manual session response:', data)
+      } catch (error) {
+        console.error('Manual session check error:', error)
+      }
+    }
+    checkSession()
+    
     // Add timeout to prevent infinite loading
     const timeout = setTimeout(() => {
       if (loading) {
