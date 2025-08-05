@@ -49,6 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchAppUser = async (email: string) => {
     try {
+      console.log('Fetching app user for email:', email)
       const { data, error } = await supabase
         .from('users')
         .select('*')
@@ -61,8 +62,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data) {
+        console.log('App user found:', data)
         setAppUser(data)
       } else {
+        console.log('App user not found, creating new user')
         // User doesn't exist in our database, create them
         await createAppUser(email)
       }
@@ -73,6 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const createAppUser = async (email: string) => {
     try {
+      console.log('Creating app user for email:', email)
       const { data, error } = await supabase
         .from('users')
         .insert([
@@ -89,6 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
+      console.log('App user created successfully:', data)
       setAppUser(data)
     } catch (error) {
       console.error('Error in createAppUser:', error)

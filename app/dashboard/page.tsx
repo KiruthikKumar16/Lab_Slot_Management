@@ -38,10 +38,20 @@ export default function StudentDashboard() {
       return
     }
 
+    // Add timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.error('Dashboard loading timeout - forcing loading to false')
+        setLoading(false)
+      }
+    }, 10000) // 10 seconds timeout
+
     if (appUser) {
       fetchDashboardData()
     }
-  }, [user, appUser, isAdmin, router])
+
+    return () => clearTimeout(timeout)
+  }, [user, appUser, isAdmin, router, loading])
 
   const fetchDashboardData = async () => {
     try {
