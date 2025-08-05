@@ -9,21 +9,18 @@ export async function GET(request: Request) {
     console.log('=== AUTH CALLBACK DEBUG ===')
     console.log('Full URL:', requestUrl.toString())
     console.log('All search params:', Object.fromEntries(requestUrl.searchParams.entries()))
-    console.log('Headers:', Object.fromEntries(request.headers.entries()))
     
     const code = requestUrl.searchParams.get('code')
     const accessToken = requestUrl.searchParams.get('access_token')
     const refreshToken = requestUrl.searchParams.get('refresh_token')
     const error = requestUrl.searchParams.get('error')
     const errorDescription = requestUrl.searchParams.get('error_description')
-    const state = requestUrl.searchParams.get('state')
     
     console.log('OAuth Parameters found:')
     console.log('- code:', code ? 'Present' : 'Missing')
     console.log('- access_token:', accessToken ? 'Present' : 'Missing')
     console.log('- refresh_token:', refreshToken ? 'Present' : 'Missing')
     console.log('- error:', error)
-    console.log('- state:', state ? 'Present' : 'Missing')
 
     if (error) {
       console.error('OAuth error:', error, errorDescription)
@@ -43,26 +40,8 @@ export async function GET(request: Request) {
 
       if (data.session?.user) {
         console.log('Session established successfully for user:', data.session.user.email)
-        
-        // Set session cookies properly
-        const response = NextResponse.redirect(`${requestUrl.origin}`)
-        
-        // Set the session cookie
-        response.cookies.set('sb-access-token', data.session.access_token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 60 * 60 * 24 * 7 // 7 days
-        })
-        
-        response.cookies.set('sb-refresh-token', data.session.refresh_token!, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 60 * 60 * 24 * 7 // 7 days
-        })
-        
-        return response
+        // Let Supabase handle the session cookies automatically
+        return NextResponse.redirect(`${requestUrl.origin}`)
       }
       
       console.log('No session in exchange response')
@@ -81,26 +60,8 @@ export async function GET(request: Request) {
 
       if (data.session?.user) {
         console.log('Session set successfully for user:', data.session.user.email)
-        
-        // Set session cookies properly
-        const response = NextResponse.redirect(`${requestUrl.origin}`)
-        
-        // Set the session cookie
-        response.cookies.set('sb-access-token', data.session.access_token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 60 * 60 * 24 * 7 // 7 days
-        })
-        
-        response.cookies.set('sb-refresh-token', data.session.refresh_token!, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 60 * 60 * 24 * 7 // 7 days
-        })
-        
-        return response
+        // Let Supabase handle the session cookies automatically
+        return NextResponse.redirect(`${requestUrl.origin}`)
       }
       
       console.log('No session in set session response')
