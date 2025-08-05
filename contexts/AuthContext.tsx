@@ -268,17 +268,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signInWithGoogle = async () => {
     console.log('=== OAuth Debug ===')
     console.log('Window origin:', window.location.origin)
-    console.log('Redirect URL:', 'https://lab-slot-management.vercel.app/auth/callback')
     
     const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: 'https://lab-slot-management.vercel.app/auth/callback',
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent'
-        }
-      }
+      provider: 'google'
     })
 
     if (error) {
