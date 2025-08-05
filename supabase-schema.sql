@@ -147,4 +147,16 @@ INSERT INTO public.users (email, name, role) VALUES
 ON CONFLICT (email) DO NOTHING;
 
 -- Insert sample bookings for testing (will be added after user creation)
--- Note: These will be added by the application when you book slots 
+-- Note: These will be added by the application when you book slots
+
+-- Add sample bookings for the user (after user creation)
+-- This creates bookings for the existing user
+INSERT INTO public.bookings (user_id, lab_slot_id, status, samples_submitted) 
+SELECT u.id, ls.id, 'booked', 5
+FROM public.users u, public.lab_slots ls 
+WHERE u.email = 'kiruthikkumar.m2022@vitstudent.ac.in' 
+AND ls.id IN (1, 3, 5, 7)
+ON CONFLICT DO NOTHING;
+
+-- Update lab slot capacities based on bookings
+UPDATE public.lab_slots SET current_bookings = 1, status = 'available' WHERE id IN (1, 3, 5, 7); 
