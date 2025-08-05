@@ -207,23 +207,23 @@ export default function AdminStudents() {
         </div>
 
         {/* Students Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredStudents.map((student) => (
-            <div key={student.id} className="glass-card p-6">
+            <div key={student.id} className="glass-card p-8">
               {/* Student Header */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold ${getAvatarColor(student.email)}`}>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-4">
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-lg ${getAvatarColor(student.email)}`}>
                     {getInitials(student.email)}
                   </div>
                   <div>
-                    <h3 className="font-bold text-slate-800">
+                    <h3 className="text-lg font-bold text-slate-800 mb-1">
                       {student.email.split('@')[0]}
                     </h3>
                     <p className="text-sm text-slate-600">{student.email}</p>
                   </div>
                 </div>
-                <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                <div className={`px-3 py-1 rounded-full text-sm font-medium ${
                   student.isActive 
                     ? 'bg-green-100 text-green-800' 
                     : 'bg-slate-100 text-slate-600'
@@ -233,27 +233,27 @@ export default function AdminStudents() {
               </div>
 
               {/* Stats */}
-              <div className="space-y-3 mb-4">
+              <div className="space-y-4 mb-6">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-600">Total Bookings</span>
-                  <span className="font-semibold text-slate-800">{student.totalBookings}</span>
+                  <span className="text-base text-slate-600">Total Bookings</span>
+                  <span className="text-lg font-semibold text-slate-800">{student.totalBookings}</span>
                 </div>
                 
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-600">Completed</span>
-                  <span className="font-semibold text-green-600">{student.completedBookings}</span>
+                  <span className="text-base text-slate-600">Completed</span>
+                  <span className="text-lg font-semibold text-green-600">{student.completedBookings}</span>
                 </div>
                 
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-600">Completion Rate</span>
-                  <span className="font-semibold text-blue-600">{student.completionRate}%</span>
+                  <span className="text-base text-slate-600">Completion Rate</span>
+                  <span className="text-lg font-semibold text-blue-600">{student.completionRate}%</span>
                 </div>
                 
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-600">Last active</span>
-                  <div className="flex items-center space-x-1">
-                    <Calendar className="w-3 h-3 text-slate-400" />
-                    <span className="text-xs text-slate-600">{student.lastActive}</span>
+                  <span className="text-base text-slate-600">Last active</span>
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm text-slate-600">{student.lastActive}</span>
                   </div>
                 </div>
               </div>
@@ -262,13 +262,13 @@ export default function AdminStudents() {
               <button
                 onClick={() => handleRemoveStudent(student.id)}
                 disabled={removingStudent === student.id}
-                className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
+                className="w-full px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center space-x-3 disabled:opacity-50 text-base font-medium"
               >
                 {removingStudent === student.id ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 ) : (
                   <>
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-5 h-5" />
                     <span>Remove Student</span>
                   </>
                 )}
