@@ -212,7 +212,7 @@ export default function AdminBookings() {
                           </div>
                           <div>
                             <div className="font-medium text-slate-800">
-                              {booking.user?.name || 'Unknown Student'}
+                              {booking.user?.email?.split('@')[0] || 'Unknown Student'}
                             </div>
                             <div className="text-sm text-slate-600">
                               {booking.user?.email || 'No email'}
