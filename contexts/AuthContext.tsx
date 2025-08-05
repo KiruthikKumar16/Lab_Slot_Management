@@ -50,14 +50,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Check Google OAuth session
   const checkGoogleSession = async () => {
     try {
+      console.log('=== CHECKING GOOGLE SESSION ===')
       const response = await fetch('/api/auth/session')
       const data = await response.json()
       
+      console.log('Session response:', data)
+      
       if (data.user) {
+        console.log('User found in session:', data.user.email)
         setUser(data.user)
         await fetchAppUser(data.user.email)
         resetInactivityTimer()
       } else {
+        console.log('No user in session')
         setUser(null)
         setAppUser(null)
       }
@@ -153,6 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchAppUser = async (email: string) => {
     try {
+      console.log('=== FETCHING APP USER ===')
       console.log('Fetching app user for:', email)
       
       const { data, error } = await supabase
@@ -160,6 +166,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .select('*')
         .eq('email', email)
         .single()
+
+      console.log('Supabase response:', { data, error })
 
       if (error) {
         // If user doesn't exist in our app table, create them
@@ -181,6 +189,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const createAppUser = async (email: string) => {
     try {
+      console.log('=== CREATING APP USER ===')
       console.log('Creating app user for:', email)
 
       const { data, error } = await supabase
@@ -191,6 +200,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
         .select()
         .single()
+
+      console.log('Create user response:', { data, error })
 
       if (error) {
         console.error('Error creating app user:', error)
