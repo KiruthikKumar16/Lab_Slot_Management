@@ -20,8 +20,8 @@ export default function DebugPage() {
 
     // Check Supabase configuration
     setSupabaseInfo({
-      supabase_url: supabase.supabaseUrl,
-      supabase_anon_key: supabase.supabaseKey ? 'SET' : 'NOT SET'
+      supabase_configured: !!supabase,
+      has_auth: !!supabase.auth
     })
   }, [])
 
