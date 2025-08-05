@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { Search, Users, Calendar, CheckCircle, AlertTriangle, Trash2, User } from 'lucide-react'
+import { Search, Users, Calendar, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import Navigation from '@/components/Navigation'
@@ -16,7 +16,6 @@ interface Student {
   totalBookings: number
   completedBookings: number
   completionRate: number
-  totalSamples: number
   lastActive: string
   isActive: boolean
 }
@@ -78,7 +77,6 @@ export default function AdminStudents() {
           const totalBookings = bookings?.length || 0
           const completedBookings = bookings?.filter(b => b.status === 'booked').length || 0
           const completionRate = totalBookings > 0 ? Math.round((completedBookings / totalBookings) * 100) : 0
-          const totalSamples = bookings?.reduce((sum, b) => sum + (b.samples_submitted || 0), 0) || 0
           
           // Calculate last active date
           const lastBooking = bookings?.sort((a, b) => 
@@ -97,7 +95,6 @@ export default function AdminStudents() {
             totalBookings,
             completedBookings,
             completionRate,
-            totalSamples,
             lastActive,
             isActive
           }
@@ -250,11 +247,6 @@ export default function AdminStudents() {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-600">Completion Rate</span>
                   <span className="font-semibold text-blue-600">{student.completionRate}%</span>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-600">Total Samples</span>
-                  <span className="font-semibold text-purple-600">{student.totalSamples}</span>
                 </div>
                 
                 <div className="flex justify-between items-center">
