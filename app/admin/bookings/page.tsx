@@ -80,7 +80,7 @@ export default function AdminBookings() {
     }
   }
 
-  const handleCancelBooking = async (bookingId: number) => {
+  const handleCancelBooking = async (bookingId: string) => {
     try {
       const { error } = await supabase
         .from('bookings')
@@ -97,7 +97,7 @@ export default function AdminBookings() {
     }
   }
 
-  const handleReopenBooking = async (bookingId: number) => {
+  const handleReopenBooking = async (bookingId: string) => {
     try {
       const { error } = await supabase
         .from('bookings')
@@ -114,7 +114,7 @@ export default function AdminBookings() {
     }
   }
 
-  const handleRemoveBooking = async (bookingId: number) => {
+  const handleRemoveBooking = async (bookingId: string) => {
     try {
       const { error } = await supabase
         .from('bookings')
