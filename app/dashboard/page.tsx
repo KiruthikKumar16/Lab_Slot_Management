@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { Calendar, Clock, Users, BookOpen, FileText, AlertTriangle, TestTube, Plus, ArrowRight, User, LogOut } from 'lucide-react'
+import { Calendar, Clock, BookOpen, FileText, TestTube, User, LogOut } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { Booking, LabSlot } from '@/lib/supabase'
+import { Booking, LabSlot, User as AppUser } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import Navigation from '@/components/Navigation'
 
@@ -28,87 +28,39 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    console.log('=== DASHBOARD DEBUG ===')
-    console.log('Dashboard useEffect - user:', !!user, 'appUser:', !!appUser, 'isAdmin:', isAdmin)
-    console.log('User email:', user?.email)
-    console.log('AppUser:', appUser)
-    console.log('Loading state:', loading)
-    
-    // Manual session check
-    const checkSession = async () => {
-      try {
-        console.log('=== MANUAL SESSION CHECK ===')
-        const response = await fetch('/api/auth/session')
-        const data = await response.json()
-        console.log('Manual session response:', data)
-        
-        // Also check the response status
-        console.log('Session response status:', response.status)
-        console.log('Session response headers:', Object.fromEntries(response.headers.entries()))
-        
-      } catch (error) {
-        console.error('Manual session check error:', error)
-      }
-    }
-    checkSession()
-    
-    // Add timeout to prevent infinite loading
-    const timeout = setTimeout(() => {
-      if (loading) {
-        console.log('Loading timeout reached, forcing loading to false')
-        setLoading(false)
-      }
-    }, 15000) // 15 seconds timeout
-    
     if (!user) {
-      console.log('No user found, redirecting to login')
       router.push('/login')
       return
     }
 
     if (isAdmin) {
-      console.log('User is admin, redirecting to admin')
       router.push('/admin')
       return
     }
 
-    // If user exists but appUser doesn't, wait for AuthContext to create it
-    if (user && !appUser) {
-      console.log('User authenticated but appUser not loaded yet, waiting...')
-      return
+    if (appUser) {
+      fetchDashboardData()
     }
-
-    console.log('All checks passed, fetching dashboard data')
-    fetchDashboardData()
-
-    return () => {
-      clearTimeout(timeout)
-    }
-  }, [user, appUser, isAdmin, router, loading])
+  }, [user, appUser, isAdmin, router])
 
   const fetchDashboardData = async () => {
     try {
-      console.log('=== FETCHING DASHBOARD DATA ===')
-      console.log('Fetching dashboard data for user:', user?.email)
+      setLoading(true)
       
-      // Get the user from our database using email
+      // Get user from database by email
       const { data: dbUser, error: userError } = await supabase
         .from('users')
         .select('id')
         .eq('email', user?.email)
         .single()
 
-      if (userError) {
-        console.error('Error fetching user from database:', userError)
-        toast.error('Failed to load user data')
-        setLoading(false) // Make sure to set loading to false
+      if (userError || !dbUser) {
+        console.error('Error fetching user:', userError)
         return
       }
 
-      console.log('Found user in database:', dbUser)
-
-      // Fetch user's bookings using the database user ID
-      const { data: bookings, error } = await supabase
+      // Fetch user's bookings
+      const { data: bookings, error: bookingsError } = await supabase
         .from('bookings')
         .select(`
           *,
@@ -117,43 +69,26 @@ export default function StudentDashboard() {
         .eq('user_id', dbUser.id)
         .order('created_at', { ascending: false })
 
-      if (error) {
-        console.error('Error fetching bookings:', error)
-        throw error
-      }
-
-      console.log('Fetched bookings:', bookings)
+      if (bookingsError) throw bookingsError
 
       // Calculate stats
       const totalSessions = bookings?.length || 0
-      const completed = bookings?.filter(b => b.status === 'booked').length || 0
-      const upcoming = bookings?.filter(b => b.status === 'booked').length || 0
+      const completed = bookings?.filter(b => b.status === 'booked' && b.samples_submitted > 0).length || 0
+      const upcoming = bookings?.filter(b => b.status === 'booked' && b.samples_submitted === 0).length || 0
 
-      console.log('Calculated stats:', { totalSessions, completed, upcoming })
+      setStats({ totalSessions, completed, upcoming })
 
-      setStats({
-        totalSessions,
-        completed,
-        upcoming
-      })
+      // Get next session (first upcoming session)
+      const upcomingSessions = bookings?.filter(b => b.status === 'booked' && b.samples_submitted === 0) || []
+      setNextSession(upcomingSessions[0] || null)
 
-      // Find next session
-      const next = bookings?.find(b => 
-        b.status === 'booked' && 
-        new Date(b.lab_slot.date) > new Date()
-      )
-      setNextSession(next || null)
-
-      // Get recent sessions
-      setRecentSessions(bookings?.slice(0, 4) || [])
-
-      console.log('Dashboard data loaded successfully')
+      // Get recent sessions (last 5)
+      setRecentSessions(bookings?.slice(0, 5) || [])
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
       toast.error('Failed to load dashboard data')
     } finally {
-      console.log('Setting loading to false')
       setLoading(false)
     }
   }
@@ -173,12 +108,6 @@ export default function StudentDashboard() {
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-slate-600">Loading dashboard...</p>
-          <div className="mt-4 p-4 bg-white/50 rounded-lg text-sm">
-            <p>Debug Info:</p>
-            <p>User: {user?.email || 'No user'}</p>
-            <p>AppUser: {appUser?.email || 'No appUser'}</p>
-            <p>Loading: {loading ? 'true' : 'false'}</p>
-          </div>
         </div>
       </div>
     )
@@ -192,20 +121,12 @@ export default function StudentDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-                     <h2 className="text-3xl font-bold text-slate-800 mb-2">
-             Welcome back, {appUser?.email?.split('@')[0] || user?.email?.split('@')[0] || 'Student'}
-           </h2>
+          <h2 className="text-3xl font-bold text-slate-800 mb-2">
+            Welcome back, {appUser?.email?.split('@')[0] || user?.email?.split('@')[0] || 'Student'}
+          </h2>
           <p className="text-slate-600">
             Manage your lab sessions and track your progress
           </p>
-          {/* Debug info */}
-          <div className="mt-4 p-4 bg-white/50 rounded-lg text-sm">
-            <p><strong>Debug Info:</strong></p>
-            <p>User Email: {user?.email || 'No user email'}</p>
-            <p>AppUser Email: {appUser?.email || 'No appUser email'}</p>
-            <p>AppUser Role: {appUser?.role || 'No role'}</p>
-            <p>Is Admin: {isAdmin ? 'Yes' : 'No'}</p>
-          </div>
         </div>
 
         {/* Summary Cards */}
@@ -267,21 +188,21 @@ export default function StudentDashboard() {
                   <span className="text-slate-700">{nextSession.lab_slot?.start_time || '00:00'} - {nextSession.lab_slot?.end_time || '00:00'}</span>
                 </div>
                 <div className="text-slate-700 font-medium">
-                  Lab Session
+                  {nextSession.lab_slot?.date ? new Date(nextSession.lab_slot.date).toLocaleDateString('en-US', { weekday: 'long' }) : 'Unknown day'}
                 </div>
               </div>
             ) : (
-              <div className="text-slate-500 mb-6">
-                No upcoming sessions
+              <div className="text-slate-500 text-center py-8">
+                <TestTube className="w-12 h-12 mx-auto mb-3 text-slate-400" />
+                <p>No upcoming sessions</p>
               </div>
             )}
 
             <button
               onClick={() => router.push('/book')}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-3 rounded-xl font-semibold flex items-center justify-center space-x-2 hover:from-blue-700 hover:to-indigo-800 transition-all duration-300"
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-800 transition-all duration-300"
             >
-              <Plus className="w-5 h-5" />
-              <span>Book New Session</span>
+              Book New Session
             </button>
           </div>
 
@@ -299,21 +220,22 @@ export default function StudentDashboard() {
             
             <div className="space-y-3">
               {recentSessions.length > 0 ? (
-                recentSessions.map((session, index) => (
+                recentSessions.map((session) => (
                   <div key={session.id} className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                     <div className="flex-1">
                       <div className="font-medium text-slate-800">
-                        Lab Session {index + 1}
+                        {session.lab_slot?.date ? new Date(session.lab_slot.date).toLocaleDateString() : 'Unknown date'}
                       </div>
                       <div className="text-sm text-slate-600">
-                        {session.lab_slot?.date ? new Date(session.lab_slot.date).toLocaleDateString() : 'No date'} • {session.lab_slot?.start_time || '00:00'} - {session.lab_slot?.end_time || '00:00'}
+                        {session.lab_slot?.start_time || '00:00'} - {session.lab_slot?.end_time || '00:00'}
                       </div>
                     </div>
-                                         <span className={`px-2 py-1 text-xs rounded-full ${
-                       session.status === 'no-show' ? 'bg-orange-100 text-orange-800' :
-                       'bg-blue-100 text-blue-800'
-                     }`}>
-                       {session.status === 'no-show' ? 'no-show' : 'booked'}
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      session.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                      session.status === 'no-show' ? 'bg-orange-100 text-orange-800' :
+                      'bg-blue-100 text-blue-800'
+                    }`}>
+                      {session.status}
                     </span>
                   </div>
                 ))

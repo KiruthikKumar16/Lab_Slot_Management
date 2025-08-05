@@ -1,265 +1,147 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useRef } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { User as AppUser } from '@/lib/supabase'
 
 interface AuthContextType {
-  user: any | null
+  user: any
   appUser: AppUser | null
-  loading: boolean
-  signInWithGoogle: () => Promise<void>
-  signOut: () => Promise<void>
   isAdmin: boolean
+  loading: boolean
+  signInWithGoogle: () => void
+  signOut: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// Inactivity timeout in minutes
-const INACTIVITY_TIMEOUT = 30 // 30 minutes
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<any | null>(null)
+  const [user, setUser] = useState<any>(null)
   const [appUser, setAppUser] = useState<AppUser | null>(null)
   const [loading, setLoading] = useState(true)
-  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const lastActivityRef = useRef<number>(Date.now())
-  const sessionRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Reset inactivity timer
-  const resetInactivityTimer = () => {
-    lastActivityRef.current = Date.now()
-    
-    if (inactivityTimerRef.current) {
-      clearTimeout(inactivityTimerRef.current)
-    }
-    
-    inactivityTimerRef.current = setTimeout(() => {
-      console.log('User inactive for 30 minutes, signing out...')
-      handleSignOut()
-    }, INACTIVITY_TIMEOUT * 60 * 1000)
-  }
+  const isAdmin = appUser?.role === 'admin'
 
-  // Handle user activity
-  const handleUserActivity = () => {
-    if (user) {
-      resetInactivityTimer()
-    }
-  }
+  useEffect(() => {
+    checkGoogleSession()
+  }, [])
 
-  // Check Google OAuth session
   const checkGoogleSession = async () => {
     try {
-      console.log('=== CHECKING GOOGLE SESSION ===')
       const response = await fetch('/api/auth/session')
       const data = await response.json()
       
-      console.log('Session response:', data)
-      
       if (data.user) {
-        console.log('User found in session:', data.user.email)
         setUser(data.user)
         await fetchAppUser(data.user.email)
-        resetInactivityTimer()
       } else {
-        console.log('No user in session')
         setUser(null)
         setAppUser(null)
       }
     } catch (error) {
-      console.error('Error checking session:', error)
+      console.error('Session check error:', error)
       setUser(null)
       setAppUser(null)
+    } finally {
+      setLoading(false)
     }
   }
-
-  // Handle sign out
-  const handleSignOut = async () => {
-    try {
-      await fetch('/api/auth/signout', { method: 'POST' })
-      setUser(null)
-      setAppUser(null)
-      if (inactivityTimerRef.current) {
-        clearTimeout(inactivityTimerRef.current)
-      }
-      if (sessionRefreshIntervalRef.current) {
-        clearInterval(sessionRefreshIntervalRef.current)
-      }
-    } catch (error) {
-      console.error('Error signing out:', error)
-    }
-  }
-
-  useEffect(() => {
-    let mounted = true
-
-    // Add a timeout to prevent infinite loading
-    const loadingTimeout = setTimeout(() => {
-      if (mounted && loading) {
-        console.log('Loading timeout reached, forcing loading to false')
-        setLoading(false)
-      }
-    }, 10000) // 10 seconds timeout
-
-    const initializeAuth = async () => {
-      try {
-        console.log('Initializing auth...')
-        await checkGoogleSession()
-        
-        if (mounted) {
-          setLoading(false)
-          console.log('Auth initialized')
-        }
-      } catch (error) {
-        console.error('Error initializing auth:', error)
-        if (mounted) {
-          setLoading(false)
-        }
-      }
-    }
-
-    initializeAuth()
-
-    // Set up activity listeners
-    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click']
-    
-    activityEvents.forEach(event => {
-      document.addEventListener(event, handleUserActivity, true)
-    })
-
-    // Check for activity every minute
-    const activityCheckInterval = setInterval(() => {
-      const timeSinceLastActivity = Date.now() - lastActivityRef.current
-      if (timeSinceLastActivity > INACTIVITY_TIMEOUT * 60 * 1000 && user) {
-        console.log('User inactive for too long, signing out...')
-        handleSignOut()
-      }
-    }, 60000) // Check every minute
-
-    return () => {
-      mounted = false
-      clearTimeout(loadingTimeout)
-      
-      // Clean up activity listeners
-      activityEvents.forEach(event => {
-        document.removeEventListener(event, handleUserActivity, true)
-      })
-      
-      // Clean up intervals
-      clearInterval(activityCheckInterval)
-      if (inactivityTimerRef.current) {
-        clearTimeout(inactivityTimerRef.current)
-      }
-      if (sessionRefreshIntervalRef.current) {
-        clearInterval(sessionRefreshIntervalRef.current)
-      }
-    }
-  }, [])
 
   const fetchAppUser = async (email: string) => {
     try {
-      console.log('=== FETCHING APP USER ===')
-      console.log('Fetching app user for:', email)
-      
       const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('email', email)
         .single()
 
-      console.log('Supabase response:', { data, error })
-
-      if (error) {
-        // If user doesn't exist in our app table, create them
-        if (error.code === 'PGRST116') {
-          console.log('User not found in app table, creating...')
-          await createAppUser(email)
-        } else {
-          console.error('Error fetching app user:', error)
-        }
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching app user:', error)
         return
       }
 
-      console.log('App user found:', data)
-      setAppUser(data)
+      if (data) {
+        setAppUser(data)
+      } else {
+        // User doesn't exist in our database, create them
+        await createAppUser(email)
+      }
     } catch (error) {
-      console.error('Error fetching app user:', error)
+      console.error('Error in fetchAppUser:', error)
     }
   }
 
   const createAppUser = async (email: string) => {
     try {
-      console.log('=== CREATING APP USER ===')
-      console.log('Creating app user for:', email)
-
       const { data, error } = await supabase
         .from('users')
-        .insert({
-          email: email,
-          role: 'student' // Default role
-        })
+        .insert([
+          {
+            email,
+            role: 'student' // Default role
+          }
+        ])
         .select()
         .single()
-
-      console.log('Create user response:', { data, error })
 
       if (error) {
         console.error('Error creating app user:', error)
         return
       }
 
-      console.log('App user created successfully:', data)
       setAppUser(data)
     } catch (error) {
-      console.error('Exception in createAppUser:', error)
+      console.error('Error in createAppUser:', error)
     }
   }
 
-  const signInWithGoogle = async () => {
-    console.log('=== Direct Google OAuth ===')
-    console.log('Window origin:', window.location.origin)
-    
-    // Direct Google OAuth implementation
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
-    if (!clientId) {
-      console.error('Google Client ID not configured')
-      throw new Error('Google OAuth not configured')
+  const signInWithGoogle = () => {
+    const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+    if (!googleClientId) {
+      console.error('Google OAuth not configured')
+      return
     }
-    
+
     const redirectUri = `${window.location.origin}/auth/callback`
     const scope = 'email profile'
     const responseType = 'code'
     
-    const googleOAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=${responseType}&scope=${encodeURIComponent(scope)}&access_type=offline&prompt=consent`
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${googleClientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=${responseType}&access_type=offline&prompt=consent`
     
-    console.log('Direct Google OAuth URL:', googleOAuthUrl)
-    window.location.href = googleOAuthUrl
+    window.location.href = authUrl
   }
 
-  const signOut = async () => {
-    await handleSignOut()
+  const handleSignOut = async () => {
+    try {
+      await fetch('/api/auth/signout', { method: 'POST' })
+      setUser(null)
+      setAppUser(null)
+    } catch (error) {
+      console.error('Sign out error:', error)
+    }
   }
 
-  const isAdmin = appUser?.role === 'admin'
+  const value = {
+    user,
+    appUser,
+    isAdmin,
+    loading,
+    signInWithGoogle,
+    signOut: handleSignOut
+  }
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      appUser, 
-      loading, 
-      signInWithGoogle,
-      signOut, 
-      isAdmin 
-    }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   )
 }
 
-export const useAuth = () => {
+export function useAuth() {
   const context = useContext(AuthContext)
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider')
   }
   return context
+} 
 } 
