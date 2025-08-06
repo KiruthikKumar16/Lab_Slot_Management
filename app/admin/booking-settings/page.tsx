@@ -17,7 +17,7 @@ export default function BookingSettings() {
    const [customDuration, setCustomDuration] = useState('')
    const [selectedDuration, setSelectedDuration] = useState<number | null>(null)
    const [bookingSlots, setBookingSlots] = useState<any[]>([])
-   const [overrideHistory, setOverrideHistory] = useState<any[]>([])
+   
    const [newSlot, setNewSlot] = useState({
      date: '',
      startTime: '',
@@ -65,9 +65,8 @@ export default function BookingSettings() {
       return
     }
 
-              fetchSettings()
-     fetchBookingSlots()
-     fetchOverrideHistory()
+                             fetchSettings()
+      fetchBookingSlots()
    }, [user, isAdmin, router])
 
    const fetchBookingSlots = async () => {
@@ -92,126 +91,7 @@ export default function BookingSettings() {
      }
    }
 
-   const fetchOverrideHistory = async () => {
-     try {
-       const { data, error } = await supabase
-         .from('booking_system_settings')
-         .select('*')
-         .order('updated_at', { ascending: false })
-         .limit(20)
-
-       if (error) throw error
-
-       if (data && data.length > 0) {
-         // Create a proper chronological history
-         const history: any[] = []
-         
-         // Process records in chronological order to build proper timeline
-         for (let i = 0; i < data.length; i++) {
-           const record = data[i]
-           
-           // Only add if this record represents a state change
-           if (record.emergency_booking_start || record.is_emergency_booking_open === false) {
-             const action = record.is_emergency_booking_open ? 'opened' : 'closed'
-             const timestamp = record.is_emergency_booking_open ? record.emergency_booking_start : record.updated_at
-             
-             history.push({
-               id: `${record.id}_${action}`,
-               action: action,
-               timestamp: timestamp,
-               startTime: record.emergency_booking_start,
-               endTime: record.emergency_booking_end,
-               message: record.emergency_message
-             })
-           }
-         }
-         
-         // Sort by timestamp (newest first) and take the first 4 entries
-         const sortedHistory = history
-           .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-           .slice(0, 4)
-         
-         setOverrideHistory(sortedHistory)
-       } else {
-         // If no data, create some sample history for demonstration
-         const now = new Date()
-         const sampleHistory = [
-           {
-             id: 'sample_1',
-             action: 'closed',
-             timestamp: new Date(now.getTime() - 30 * 60 * 1000).toISOString(), // 30 mins ago
-             startTime: undefined,
-             endTime: undefined,
-             message: 'Emergency booking closed'
-           },
-           {
-             id: 'sample_2',
-             action: 'opened',
-             timestamp: new Date(now.getTime() - 60 * 60 * 1000).toISOString(), // 1 hour ago
-             startTime: new Date(now.getTime() - 60 * 60 * 1000).toISOString(),
-             endTime: new Date(now.getTime() - 30 * 60 * 1000).toISOString(),
-             message: 'Emergency booking opened for 30 minutes'
-           },
-           {
-             id: 'sample_3',
-             action: 'closed',
-             timestamp: new Date(now.getTime() - 90 * 60 * 1000).toISOString(), // 1.5 hours ago
-             startTime: undefined,
-             endTime: undefined,
-             message: 'Emergency booking closed'
-           },
-           {
-             id: 'sample_4',
-             action: 'opened',
-             timestamp: new Date(now.getTime() - 120 * 60 * 1000).toISOString(), // 2 hours ago
-             startTime: new Date(now.getTime() - 120 * 60 * 1000).toISOString(),
-             endTime: new Date(now.getTime() - 90 * 60 * 1000).toISOString(),
-             message: 'Emergency booking opened for 30 minutes'
-           }
-         ]
-         setOverrideHistory(sampleHistory)
-       }
-     } catch (error) {
-       console.error('Error fetching override history:', error)
-       // Fallback to sample data if there's an error
-       const now = new Date()
-       const sampleHistory = [
-         {
-           id: 'fallback_1',
-           action: 'closed',
-           timestamp: new Date(now.getTime() - 30 * 60 * 1000).toISOString(),
-           startTime: undefined,
-           endTime: undefined,
-           message: 'Emergency booking closed'
-         },
-         {
-           id: 'fallback_2',
-           action: 'opened',
-           timestamp: new Date(now.getTime() - 60 * 60 * 1000).toISOString(),
-           startTime: new Date(now.getTime() - 60 * 60 * 1000).toISOString(),
-           endTime: new Date(now.getTime() - 30 * 60 * 1000).toISOString(),
-           message: 'Emergency booking opened for 30 minutes'
-         },
-         {
-           id: 'fallback_3',
-           action: 'closed',
-           timestamp: new Date(now.getTime() - 90 * 60 * 1000).toISOString(),
-           startTime: undefined,
-           endTime: undefined,
-           message: 'Emergency booking closed'
-         },
-         {
-           id: 'fallback_4',
-           action: 'opened',
-           timestamp: new Date(now.getTime() - 120 * 60 * 1000).toISOString(),
-           startTime: new Date(now.getTime() - 120 * 60 * 1000).toISOString(),
-           endTime: new Date(now.getTime() - 90 * 60 * 1000).toISOString(),
-           message: 'Emergency booking opened for 30 minutes'
-         }
-       ]
-       setOverrideHistory(sampleHistory)
-     }
-   }
+   
 
    const fetchSettings = async () => {
     try {
@@ -322,8 +202,7 @@ export default function BookingSettings() {
           emergency_message: `Emergency booking open for ${minutes} minutes. Book now!`
         }))
 
-        toast.success(`Booking opened for ${minutes} minutes!`)
-        fetchOverrideHistory() // Refresh history
+                 toast.success(`Booking opened for ${minutes} minutes!`)
       } catch (error) {
         console.error('Error opening quick booking:', error)
         toast.error('Failed to open booking')
@@ -375,8 +254,7 @@ export default function BookingSettings() {
           emergency_message: 'Manual booking is now open. Book your lab sessions!'
         }))
 
-        toast.success('Manual booking opened!')
-        fetchOverrideHistory() // Refresh history
+                 toast.success('Manual booking opened!')
       } catch (error) {
         console.error('Error opening manual booking:', error)
         toast.error('Failed to open booking')
@@ -419,8 +297,7 @@ export default function BookingSettings() {
            emergency_message: 'Emergency booking is currently closed.'
          }))
 
-                   toast.success('Booking closed!')
-          fetchOverrideHistory() // Refresh history
+                                       toast.success('Booking closed!')
         } catch (error) {
           console.error('Error closing booking:', error)
           toast.error('Failed to close booking')
@@ -798,46 +675,7 @@ export default function BookingSettings() {
                    </div>
                  )}
 
-                                                  {/* Recent Override History */}
-                 <div className="mt-6 p-3 bg-white border border-slate-200 rounded-lg">
-                   <h5 className="font-medium text-slate-800 mb-3">📜 Recent Overrides:</h5>
-                   <div className="space-y-2 text-sm">
-                     {overrideHistory.length === 0 ? (
-                       <div className="text-slate-500 text-center py-2">
-                         No recent overrides found
-                       </div>
-                     ) : (
-                       overrideHistory.map((override) => (
-                         <div key={override.id} className="flex items-center space-x-2">
-                           <span className={override.action === 'opened' ? 'text-green-600' : 'text-red-600'}>
-                             {override.action === 'opened' ? '✔️' : '❌'}
-                           </span>
-                           <span className="text-slate-700">
-                             {override.action === 'opened' ? 'Opened' : 'Closed'}: {
-                               new Date(override.timestamp).toLocaleDateString('en-US', {
-                                 month: 'short',
-                                 day: 'numeric'
-                               })
-                             }, {
-                               new Date(override.timestamp).toLocaleTimeString('en-US', {
-                                 hour: 'numeric',
-                                 minute: '2-digit',
-                                 hour12: true
-                               })
-                             }
-                             {override.startTime && override.endTime && (
-                               ` → ${new Date(override.endTime).toLocaleTimeString('en-US', {
-                                 hour: 'numeric',
-                                 minute: '2-digit',
-                                 hour12: true
-                               })}`
-                             )}
-                           </span>
-                         </div>
-                       ))
-                     )}
-                   </div>
-                 </div>
+                                                  
                </div>
           </div>
 
