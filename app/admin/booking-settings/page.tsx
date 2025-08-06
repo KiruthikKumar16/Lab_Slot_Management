@@ -15,6 +15,7 @@ export default function BookingSettings() {
      const [loading, setLoading] = useState(true)
    const [saving, setSaving] = useState(false)
    const [customDuration, setCustomDuration] = useState('')
+   const [selectedDuration, setSelectedDuration] = useState<number | null>(null)
    const [bookingSlots, setBookingSlots] = useState<any[]>([])
    const [newSlot, setNewSlot] = useState({
      date: '',
@@ -156,7 +157,12 @@ export default function BookingSettings() {
      }))
    }
 
-       const handleQuickOpen = async (minutes: number) => {
+       const handleSelectDuration = (minutes: number) => {
+      setSelectedDuration(minutes)
+      setCustomDuration('') // Clear custom duration when selecting preset
+    }
+
+    const handleQuickOpen = async (minutes: number) => {
       try {
         const now = new Date()
         const endTime = new Date(now.getTime() + minutes * 60 * 1000)
@@ -204,6 +210,15 @@ export default function BookingSettings() {
       try {
         const now = new Date()
         
+        // Check if a duration is selected
+        if (selectedDuration) {
+          // Use the selected duration
+          await handleQuickOpen(selectedDuration)
+          setSelectedDuration(null) // Clear selection after opening
+          return
+        }
+
+        // If no duration selected, open indefinitely
         // Get current user ID first
         const { data: currentUser, error: userError } = await supabase
           .from('users')
@@ -286,17 +301,18 @@ export default function BookingSettings() {
        }
      }
 
-         const handleCustomOpen = async () => {
-       const minutes = parseInt(customDuration || '0')
-       
-       if (minutes <= 0 || minutes > 1440) { // Max 24 hours
-         toast.error('Please enter a valid duration (1-1440 minutes)')
-         return
-       }
-       
-       await handleQuickOpen(minutes)
-       setCustomDuration('') // Clear input after use
-     }
+                   const handleCustomOpen = async () => {
+        const minutes = parseInt(customDuration || '0')
+        
+        if (minutes <= 0 || minutes > 1440) { // Max 24 hours
+          toast.error('Please enter a valid duration (1-1440 minutes)')
+          return
+        }
+        
+        setSelectedDuration(minutes)
+        setCustomDuration('') // Clear input after use
+        toast.success(`Duration set to ${minutes} minutes. Click "Open Booking Now" to start.`)
+      }
 
          const handleAddSlot = async () => {
        if (!newSlot.date || !newSlot.startTime || !newSlot.endTime) {
@@ -544,31 +560,54 @@ export default function BookingSettings() {
                 <h4 className="font-semibold text-slate-800 mb-3">Manual Booking Control</h4>
                 <p className="text-sm text-slate-600 mb-4">Quick on-the-spot control for immediate booking access</p>
                 
-                {/* Quick Time Slots - Improved UI */}
-                <div className="mb-6">
-                  <h5 className="font-medium text-slate-700 mb-3">Select Duration:</h5>
-                  <div className="flex flex-wrap gap-2 mb-3">
+                                 {/* Quick Time Slots - Improved UI */}
+                 <div className="mb-6">
+                   <h5 className="font-medium text-slate-700 mb-3">Select Duration:</h5>
+                   {selectedDuration && (
+                     <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                       <span className="text-sm text-blue-700">
+                         ✅ Selected: {selectedDuration} minutes
+                       </span>
+                     </div>
+                   )}
+                   <div className="flex flex-wrap gap-2 mb-3">
                                          <button 
-                       onClick={() => handleQuickOpen(10)}
-                       className="px-4 py-2 rounded-full text-sm font-medium transition-colors bg-gray-200 text-gray-700 hover:bg-blue-600 hover:text-white"
+                       onClick={() => handleSelectDuration(10)}
+                       className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                         selectedDuration === 10 
+                           ? 'bg-blue-600 text-white' 
+                           : 'bg-gray-200 text-gray-700 hover:bg-blue-600 hover:text-white'
+                       }`}
                      >
                        10m
                      </button>
                      <button 
-                       onClick={() => handleQuickOpen(20)}
-                       className="px-4 py-2 rounded-full text-sm font-medium transition-colors bg-gray-200 text-gray-700 hover:bg-blue-600 hover:text-white"
+                       onClick={() => handleSelectDuration(20)}
+                       className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                         selectedDuration === 20 
+                           ? 'bg-blue-600 text-white' 
+                           : 'bg-gray-200 text-gray-700 hover:bg-blue-600 hover:text-white'
+                       }`}
                      >
                        20m
                      </button>
                      <button 
-                       onClick={() => handleQuickOpen(60)}
-                       className="px-4 py-2 rounded-full text-sm font-medium transition-colors bg-gray-200 text-gray-700 hover:bg-blue-600 hover:text-white"
+                       onClick={() => handleSelectDuration(60)}
+                       className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                         selectedDuration === 60 
+                           ? 'bg-blue-600 text-white' 
+                           : 'bg-gray-200 text-gray-700 hover:bg-blue-600 hover:text-white'
+                       }`}
                      >
                        1h
                      </button>
                      <button 
-                       onClick={() => handleQuickOpen(120)}
-                       className="px-4 py-2 rounded-full text-sm font-medium transition-colors bg-gray-200 text-gray-700 hover:bg-blue-600 hover:text-white"
+                       onClick={() => handleSelectDuration(120)}
+                       className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                         selectedDuration === 120 
+                           ? 'bg-blue-600 text-white' 
+                           : 'bg-gray-200 text-gray-700 hover:bg-blue-600 hover:text-white'
+                       }`}
                      >
                        2h
                      </button>
@@ -593,29 +632,34 @@ export default function BookingSettings() {
                 </div>
 
                                  {/* Manual Control - Improved Buttons */}
-                 <div className="flex flex-wrap gap-3 mb-4">
-                   <button 
-                     onClick={handleManualOpen}
-                     disabled={settings.is_emergency_booking_open}
-                     className={`px-6 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
-                       settings.is_emergency_booking_open 
-                         ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
-                         : 'bg-green-600 text-white hover:bg-green-700'
-                     }`}
-                   >
-                     <CheckCircle className="w-4 h-4" />
-                     <span>Open Booking Now</span>
-                   </button>
-                   {settings.is_emergency_booking_open && (
-                     <button 
-                       onClick={handleManualClose}
-                       className="px-6 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2 bg-red-600 text-white hover:bg-red-700"
-                     >
-                       <XCircle className="w-4 h-4" />
-                       <span>Close Booking Now</span>
-                     </button>
-                   )}
-                 </div>
+                                   <div className="flex flex-wrap gap-3 mb-4">
+                    <button 
+                      onClick={handleManualOpen}
+                      disabled={settings.is_emergency_booking_open}
+                      className={`px-6 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
+                        settings.is_emergency_booking_open 
+                          ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                          : 'bg-green-600 text-white hover:bg-green-700'
+                      }`}
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      <span>
+                        {selectedDuration 
+                          ? `Open Booking for ${selectedDuration} minutes` 
+                          : 'Open Booking Now'
+                        }
+                      </span>
+                    </button>
+                    {settings.is_emergency_booking_open && (
+                      <button 
+                        onClick={handleManualClose}
+                        className="px-6 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2 bg-red-600 text-white hover:bg-red-700"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        <span>Close Booking Now</span>
+                      </button>
+                    )}
+                  </div>
 
                 {/* Current Manual Booking Status - Enhanced */}
                 {settings.is_emergency_booking_open && (
