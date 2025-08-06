@@ -209,16 +209,19 @@ export default function BookingSettings() {
 
        const handleManualOpen = async () => {
       try {
+        console.log('Manual open triggered')
         const now = new Date()
         
         // Check if a duration is selected
         if (selectedDuration) {
+          console.log('Using selected duration:', selectedDuration)
           // Use the selected duration
           await handleQuickOpen(selectedDuration)
           setSelectedDuration(null) // Clear selection after opening
           return
         }
 
+        console.log('Opening booking indefinitely')
         // If no duration selected, open indefinitely
         // Get current user ID first
         const { data: currentUser, error: userError } = await supabase
@@ -227,7 +230,12 @@ export default function BookingSettings() {
           .eq('email', user?.email)
           .single()
 
-        if (userError) throw userError
+        if (userError) {
+          console.error('User error:', userError)
+          throw userError
+        }
+        
+        console.log('Current user:', currentUser)
         
         const { error } = await supabase
           .from('booking_system_settings')
@@ -310,9 +318,9 @@ export default function BookingSettings() {
           return
         }
         
-        setSelectedDuration(minutes)
+        // Actually open booking with custom duration
+        await handleQuickOpen(minutes)
         setCustomDuration('') // Clear input after use
-        toast.success(`Duration set to ${minutes} minutes. Click "Open Booking Now" to start.`)
       }
 
                    const handleAddSlot = async () => {
