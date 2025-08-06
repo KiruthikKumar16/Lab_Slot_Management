@@ -232,35 +232,47 @@ export default function BookingSettings() {
         {/* Mode Toggle Switch */}
         <div className="glass-card p-6 mb-6">
           <div className="flex items-center justify-center">
-            <div className="relative bg-slate-200 rounded-full p-1 w-80">
+            <div className="relative bg-gradient-to-r from-slate-100 to-slate-200 rounded-2xl p-1.5 w-96 shadow-inner">
               <button
                 onClick={() => setActiveMode('regular')}
-                className={`relative z-10 px-8 py-3 rounded-full font-semibold transition-all duration-300 ${
+                className={`relative z-10 px-10 py-4 rounded-xl font-semibold transition-all duration-500 ease-out ${
                   activeMode === 'regular'
-                    ? 'text-blue-600 bg-white shadow-lg'
-                    : 'text-slate-600 hover:text-slate-800'
+                    ? 'text-blue-700 bg-white shadow-xl transform scale-105'
+                    : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
                 }`}
               >
-                <div className="flex items-center space-x-2">
-                  <Shield className="w-5 h-5" />
-                  <span>Regular Booking</span>
+                <div className="flex items-center space-x-3">
+                  <div className={`p-1.5 rounded-lg transition-colors ${
+                    activeMode === 'regular' ? 'bg-blue-100' : 'bg-slate-100'
+                  }`}>
+                    <Shield className={`w-5 h-5 ${
+                      activeMode === 'regular' ? 'text-blue-600' : 'text-slate-400'
+                    }`} />
+                  </div>
+                  <span className="text-lg">Regular Booking</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveMode('emergency')}
-                className={`relative z-10 px-8 py-3 rounded-full font-semibold transition-all duration-300 ${
+                className={`relative z-10 px-10 py-4 rounded-xl font-semibold transition-all duration-500 ease-out ${
                   activeMode === 'emergency'
-                    ? 'text-orange-600 bg-white shadow-lg'
-                    : 'text-slate-600 hover:text-slate-800'
+                    ? 'text-orange-700 bg-white shadow-xl transform scale-105'
+                    : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
                 }`}
               >
-                <div className="flex items-center space-x-2">
-                  <Zap className="w-5 h-5" />
-                  <span>Emergency Booking</span>
+                <div className="flex items-center space-x-3">
+                  <div className={`p-1.5 rounded-lg transition-colors ${
+                    activeMode === 'emergency' ? 'bg-orange-100' : 'bg-slate-100'
+                  }`}>
+                    <Zap className={`w-5 h-5 ${
+                      activeMode === 'emergency' ? 'text-orange-600' : 'text-slate-400'
+                    }`} />
+                  </div>
+                  <span className="text-lg">Emergency Booking</span>
                 </div>
               </button>
               <div
-                className={`absolute top-1 bottom-1 w-1/2 bg-white rounded-full shadow-lg transition-all duration-300 ${
+                className={`absolute top-1.5 bottom-1.5 w-1/2 bg-white rounded-xl shadow-lg transition-all duration-500 ease-out ${
                   activeMode === 'emergency' ? 'translate-x-full' : 'translate-x-0'
                 }`}
               />
@@ -426,44 +438,46 @@ export default function BookingSettings() {
           </div>
         )}
 
-        {/* Quick Actions */}
-        <div className="glass-card p-6 mb-6">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-              <Zap className="w-5 h-5 text-white" />
+        {/* Quick Actions - Only show in Emergency mode */}
+        {activeMode === 'emergency' && (
+          <div className="glass-card p-6 mb-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
+                <Zap className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-800">Quick Actions</h3>
             </div>
-            <h3 className="text-lg font-semibold text-slate-800">Quick Actions</h3>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button
-              onClick={() => setSettings(prev => ({
-                ...prev,
-                is_emergency_booking_open: true,
-                emergency_booking_start: new Date().toISOString().slice(0, 16),
-                emergency_booking_end: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString().slice(0, 16), // 4 hours from now
-                emergency_allowed_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
-              }))}
-              className="flex items-center justify-center space-x-3 bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-3 rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-300 shadow-lg hover:shadow-xl"
-            >
-              <Zap className="w-5 h-5" />
-              <span>Open Emergency Booking (4 hours)</span>
-            </button>
             
-            <button
-              onClick={() => setSettings(prev => ({
-                ...prev,
-                is_emergency_booking_open: false,
-                emergency_booking_start: undefined,
-                emergency_booking_end: undefined
-              }))}
-              className="flex items-center justify-center space-x-3 bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-3 rounded-xl font-semibold hover:from-red-700 hover:to-red-800 transition-all duration-300 shadow-lg hover:shadow-xl"
-            >
-              <XCircle className="w-5 h-5" />
-              <span>Close Emergency Booking</span>
-            </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <button
+                onClick={() => setSettings(prev => ({
+                  ...prev,
+                  is_emergency_booking_open: true,
+                  emergency_booking_start: new Date().toISOString().slice(0, 16),
+                  emergency_booking_end: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString().slice(0, 16), // 4 hours from now
+                  emergency_allowed_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+                }))}
+                className="flex items-center justify-center space-x-3 bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-3 rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-300 shadow-lg hover:shadow-xl"
+              >
+                <Zap className="w-5 h-5" />
+                <span>Open Emergency Booking (4 hours)</span>
+              </button>
+              
+              <button
+                onClick={() => setSettings(prev => ({
+                  ...prev,
+                  is_emergency_booking_open: false,
+                  emergency_booking_start: undefined,
+                  emergency_booking_end: undefined
+                }))}
+                className="flex items-center justify-center space-x-3 bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-3 rounded-xl font-semibold hover:from-red-700 hover:to-red-800 transition-all duration-300 shadow-lg hover:shadow-xl"
+              >
+                <XCircle className="w-5 h-5" />
+                <span>Close Emergency Booking</span>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Save Button */}
         <div className="glass-card p-6">
