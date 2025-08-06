@@ -18,7 +18,7 @@ CREATE POLICY "Admins can read all booking slots" ON booking_slots
   FOR SELECT USING (
     EXISTS (
       SELECT 1 FROM users 
-      WHERE users.id = auth.uid() 
+      WHERE users.email = auth.jwt() ->> 'email'
       AND users.is_admin = true
     )
   );
@@ -28,7 +28,7 @@ CREATE POLICY "Admins can insert booking slots" ON booking_slots
   FOR INSERT WITH CHECK (
     EXISTS (
       SELECT 1 FROM users 
-      WHERE users.id = auth.uid() 
+      WHERE users.email = auth.jwt() ->> 'email'
       AND users.is_admin = true
     )
   );
@@ -38,7 +38,7 @@ CREATE POLICY "Admins can update booking slots" ON booking_slots
   FOR UPDATE USING (
     EXISTS (
       SELECT 1 FROM users 
-      WHERE users.id = auth.uid() 
+      WHERE users.email = auth.jwt() ->> 'email'
       AND users.is_admin = true
     )
   );
@@ -48,7 +48,7 @@ CREATE POLICY "Admins can delete booking slots" ON booking_slots
   FOR DELETE USING (
     EXISTS (
       SELECT 1 FROM users 
-      WHERE users.id = auth.uid() 
+      WHERE users.email = auth.jwt() ->> 'email'
       AND users.is_admin = true
     )
   );
