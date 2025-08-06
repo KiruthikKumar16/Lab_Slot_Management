@@ -202,6 +202,15 @@ export default function BookPage() {
         return
       }
 
+      // Get the slot details for booking creation
+      const { data: slotDetails, error: slotError } = await supabase
+        .from('lab_slots')
+        .select('*')
+        .eq('id', slotId)
+        .single()
+
+      if (slotError) throw slotError
+
       // Book the slot
       const { error } = await supabase
         .from('lab_slots')
@@ -212,6 +221,25 @@ export default function BookPage() {
         .eq('id', slotId)
 
       if (error) throw error
+
+      // Create booking record
+      const { error: bookingError } = await supabase
+        .from('bookings')
+        .insert({
+          user_id: appUser.id,
+          lab_slot_id: slotId,
+          booking_date: slotDetails.date,
+          start_time: slotDetails.start_time,
+          end_time: slotDetails.end_time,
+          status: 'confirmed',
+          remarks: slotDetails.remarks || 'Lab session booking'
+        })
+
+      if (bookingError) {
+        console.error('Error creating booking record:', bookingError)
+        // Don't fail the entire booking if booking record creation fails
+        // The slot is already booked, so we'll just log the error
+      }
 
       toast.success('Slot booked successfully!')
       // Add to booked slots set

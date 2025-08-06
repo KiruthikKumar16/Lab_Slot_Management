@@ -37,13 +37,22 @@ export default function MySessionsPage() {
     try {
       setLoading(true)
       
+      // Get current user ID from users table
+      const { data: currentUser, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', user?.email)
+        .single()
+
+      if (userError) throw userError
+
       const { data, error } = await supabase
         .from('bookings')
         .select(`
           *,
           lab_slot (*)
         `)
-        .eq('user_id', user?.id)
+        .eq('user_id', currentUser.id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
