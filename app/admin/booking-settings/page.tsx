@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { Settings, Calendar, Clock, Save, AlertTriangle, Shield, Zap, CheckCircle, XCircle, Users, MessageSquare, ChevronDown, ChevronRight } from 'lucide-react'
+import { Settings, Calendar, Clock, Save, AlertTriangle, Shield, Zap, CheckCircle, XCircle, Users, MessageSquare } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { BookingSystemSettings } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -14,8 +14,7 @@ export default function BookingSettings() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [regularExpanded, setRegularExpanded] = useState(true)
-  const [emergencyExpanded, setEmergencyExpanded] = useState(false)
+  const [activeMode, setActiveMode] = useState<'regular' | 'emergency'>('regular')
   const [settings, setSettings] = useState<BookingSystemSettings>({
     id: 1,
     is_regular_booking_enabled: true,
@@ -230,32 +229,56 @@ export default function BookingSettings() {
           </div>
         </div>
 
-        {/* Regular Booking Settings */}
+        {/* Mode Toggle Switch */}
         <div className="glass-card p-6 mb-6">
-          <button
-            onClick={() => setRegularExpanded(!regularExpanded)}
-            className="w-full flex items-center justify-between p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors"
-          >
-            <div className="flex items-center space-x-3">
+          <div className="flex items-center justify-center">
+            <div className="relative bg-slate-200 rounded-full p-1 w-80">
+              <button
+                onClick={() => setActiveMode('regular')}
+                className={`relative z-10 px-8 py-3 rounded-full font-semibold transition-all duration-300 ${
+                  activeMode === 'regular'
+                    ? 'text-blue-600 bg-white shadow-lg'
+                    : 'text-slate-600 hover:text-slate-800'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Shield className="w-5 h-5" />
+                  <span>Regular Booking</span>
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveMode('emergency')}
+                className={`relative z-10 px-8 py-3 rounded-full font-semibold transition-all duration-300 ${
+                  activeMode === 'emergency'
+                    ? 'text-orange-600 bg-white shadow-lg'
+                    : 'text-slate-600 hover:text-slate-800'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Zap className="w-5 h-5" />
+                  <span>Emergency Booking</span>
+                </div>
+              </button>
+              <div
+                className={`absolute top-1 bottom-1 w-1/2 bg-white rounded-full shadow-lg transition-all duration-300 ${
+                  activeMode === 'emergency' ? 'translate-x-full' : 'translate-x-0'
+                }`}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Regular Booking Settings */}
+        {activeMode === 'regular' && (
+          <div className="glass-card p-6 mb-6">
+            <div className="flex items-center space-x-3 mb-6">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
                 <Shield className="w-5 h-5 text-white" />
               </div>
-              <div className="text-left">
-                <h2 className="text-xl font-semibold text-slate-800">Regular Booking (Sunday Schedule)</h2>
-                <p className="text-sm text-slate-600">
-                  {settings.is_regular_booking_enabled ? 'Enabled' : 'Disabled'} • {settings.regular_allowed_days.length} days selected
-                </p>
-              </div>
+              <h2 className="text-xl font-semibold text-slate-800">Regular Booking (Sunday Schedule)</h2>
             </div>
-            {regularExpanded ? (
-              <ChevronDown className="w-6 h-6 text-slate-600" />
-            ) : (
-              <ChevronRight className="w-6 h-6 text-slate-600" />
-            )}
-          </button>
-          
-          {regularExpanded && (
-            <div className="mt-6 space-y-6">
+            
+            <div className="space-y-6">
               {/* Regular Booking Status */}
               <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl">
                 <div className="flex items-center space-x-3">
@@ -307,35 +330,20 @@ export default function BookingSettings() {
                 </div>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Emergency Booking Settings */}
-        <div className="glass-card p-6 mb-6">
-          <button
-            onClick={() => setEmergencyExpanded(!emergencyExpanded)}
-            className="w-full flex items-center justify-between p-4 bg-orange-50 rounded-xl hover:bg-orange-100 transition-colors"
-          >
-            <div className="flex items-center space-x-3">
+        {activeMode === 'emergency' && (
+          <div className="glass-card p-6 mb-6">
+            <div className="flex items-center space-x-3 mb-6">
               <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
                 <Zap className="w-5 h-5 text-white" />
               </div>
-              <div className="text-left">
-                <h2 className="text-xl font-semibold text-slate-800">Emergency Booking (Admin Override)</h2>
-                <p className="text-sm text-slate-600">
-                  {settings.is_emergency_booking_open ? 'Open' : 'Closed'} • {settings.emergency_allowed_days?.length || 0} days selected
-                </p>
-              </div>
+              <h2 className="text-xl font-semibold text-slate-800">Emergency Booking (Admin Override)</h2>
             </div>
-            {emergencyExpanded ? (
-              <ChevronDown className="w-6 h-6 text-slate-600" />
-            ) : (
-              <ChevronRight className="w-6 h-6 text-slate-600" />
-            )}
-          </button>
-          
-          {emergencyExpanded && (
-            <div className="mt-6 space-y-6">
+            
+            <div className="space-y-6">
               {/* Emergency Booking Status */}
               <div className="flex items-center justify-between p-4 bg-orange-50 rounded-xl">
                 <div className="flex items-center space-x-3">
@@ -415,8 +423,8 @@ export default function BookingSettings() {
                 </div>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Quick Actions */}
         <div className="glass-card p-6 mb-6">
