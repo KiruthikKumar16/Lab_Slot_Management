@@ -28,6 +28,7 @@ export default function Navigation({ currentPage }: NavigationProps) {
         { name: 'Dashboard', href: '/admin', current: currentPage === 'admin' },
         { name: 'Lab Slots', href: '/admin/lab-slots', current: currentPage === 'lab-slots' },
         { name: 'Bookings', href: '/admin/bookings', current: currentPage === 'bookings' },
+        { name: 'Booking Settings', href: '/admin/booking-settings', current: currentPage === 'booking-settings' },
         { name: 'Students', href: '/admin/students', current: currentPage === 'students' },
         { name: 'Reports', href: '/admin/reports', current: currentPage === 'reports' }
       ]
