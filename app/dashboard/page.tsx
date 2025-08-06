@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { Calendar, Clock, Users, BookOpen, FileText, AlertTriangle, TestTube, Plus, ArrowRight, User, LogOut } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { Booking, LabSlot } from '@/lib/supabase'
+import { LabSlot } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import Navigation from '@/components/Navigation'
 
@@ -13,6 +13,12 @@ interface DashboardStats {
   totalSessions: number
   completed: number
   upcoming: number
+}
+
+interface BookedSlot extends LabSlot {
+  user?: {
+    email: string
+  }
 }
 
 export default function StudentDashboard() {
@@ -23,8 +29,8 @@ export default function StudentDashboard() {
     completed: 0,
     upcoming: 0
   })
-  const [nextSession, setNextSession] = useState<Booking | null>(null)
-  const [recentSessions, setRecentSessions] = useState<Booking[]>([])
+  const [nextSession, setNextSession] = useState<BookedSlot | null>(null)
+  const [recentSessions, setRecentSessions] = useState<BookedSlot[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -73,25 +79,26 @@ export default function StudentDashboard() {
         return
       }
 
-      // Fetch user's bookings using the database user ID
-      const { data: bookings, error } = await supabase
-        .from('bookings')
+      // Fetch user's booked slots using the database user ID
+      const { data: bookedSlots, error } = await supabase
+        .from('lab_slots')
         .select(`
           *,
-          lab_slot (*)
+          user (*)
         `)
-        .eq('user_id', dbUser.id)
-        .order('created_at', { ascending: false })
+        .eq('booked_by', dbUser.id)
+        .order('date', { ascending: true })
+        .order('start_time', { ascending: true })
 
       if (error) {
-        console.error('Error fetching bookings:', error)
+        console.error('Error fetching booked slots:', error)
         throw error
       }
 
       // Calculate stats
-      const totalSessions = bookings?.length || 0
-      const completed = bookings?.filter(b => b.status === 'booked').length || 0
-      const upcoming = bookings?.filter(b => b.status === 'booked').length || 0
+      const totalSessions = bookedSlots?.length || 0
+      const completed = bookedSlots?.filter(slot => new Date(slot.date) < new Date()).length || 0
+      const upcoming = bookedSlots?.filter(slot => new Date(slot.date) >= new Date()).length || 0
 
       setStats({
         totalSessions,
@@ -99,16 +106,12 @@ export default function StudentDashboard() {
         upcoming
       })
 
-      // Find next session
-      const next = bookings?.find(b => 
-        b.status === 'booked' && 
-        new Date(b.lab_slot.date) > new Date()
-      )
-      setNextSession(next || null)
+      // Get next session (first upcoming session)
+      const upcomingSessions = bookedSlots?.filter(slot => new Date(slot.date) >= new Date()) || []
+      setNextSession(upcomingSessions[0] || null)
 
-      // Get recent sessions
-      setRecentSessions(bookings?.slice(0, 4) || [])
-
+      // Get recent sessions (last 5)
+      setRecentSessions(bookedSlots?.slice(0, 5) || [])
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
       toast.error('Failed to load dashboard data')
@@ -206,11 +209,11 @@ export default function StudentDashboard() {
               <div className="space-y-3 mb-6">
                 <div className="flex items-center space-x-3">
                   <Calendar className="w-4 h-4 text-slate-500" />
-                  <span className="text-slate-700">{nextSession.lab_slot?.date ? new Date(nextSession.lab_slot.date).toLocaleDateString() : 'No date'}</span>
+                  <span className="text-slate-700">{nextSession.date ? new Date(nextSession.date).toLocaleDateString() : 'No date'}</span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Clock className="w-4 h-4 text-slate-500" />
-                  <span className="text-slate-700">{nextSession.lab_slot?.start_time || '00:00'} - {nextSession.lab_slot?.end_time || '00:00'}</span>
+                  <span className="text-slate-700">{nextSession.start_time || '00:00'} - {nextSession.end_time || '00:00'}</span>
                 </div>
                 <div className="text-slate-700 font-medium">
                   Lab Session
@@ -252,14 +255,15 @@ export default function StudentDashboard() {
                         Lab Session {index + 1}
                       </div>
                       <div className="text-sm text-slate-600">
-                        {session.lab_slot?.date ? new Date(session.lab_slot.date).toLocaleDateString() : 'No date'} • {session.lab_slot?.start_time || '00:00'} - {session.lab_slot?.end_time || '00:00'}
+                        {session.date ? new Date(session.date).toLocaleDateString() : 'No date'} • {session.start_time || '00:00'} - {session.end_time || '00:00'}
                       </div>
                     </div>
-                                         <span className={`px-2 py-1 text-xs rounded-full ${
-                       session.status === 'no-show' ? 'bg-orange-100 text-orange-800' :
-                       'bg-blue-100 text-blue-800'
-                     }`}>
-                       {session.status === 'no-show' ? 'no-show' : 'booked'}
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      session.status === 'booked' ? 'bg-blue-100 text-blue-800' :
+                      session.status === 'closed' ? 'bg-gray-100 text-gray-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {session.status}
                     </span>
                   </div>
                 ))

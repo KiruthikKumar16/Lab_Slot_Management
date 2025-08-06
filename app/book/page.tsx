@@ -9,14 +9,10 @@ import { LabSlot } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import Navigation from '@/components/Navigation'
 
-interface SlotWithBookings extends LabSlot {
-  booked_count: number
-}
-
 export default function BookPage() {
   const { user } = useAuth()
   const router = useRouter()
-  const [slots, setSlots] = useState<SlotWithBookings[]>([])
+  const [slots, setSlots] = useState<LabSlot[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState('')
   const [bookingLoading, setBookingLoading] = useState<string | null>(null)
@@ -47,24 +43,16 @@ export default function BookPage() {
 
       const { data, error } = await supabase
         .from('lab_slots')
-        .select(`
-          *,
-          bookings!inner(count)
-        `)
+        .select('*')
         .in('date', nextWeek)
         .eq('status', 'available')
+        .is('booked_by', null)
         .order('date', { ascending: true })
         .order('start_time', { ascending: true })
 
       if (error) throw error
 
-      // Process the data to get booked count
-      const processedSlots = (data || []).map(slot => ({
-        ...slot,
-        booked_count: slot.bookings?.[0]?.count || 0
-      }))
-
-      setSlots(processedSlots)
+      setSlots(data || [])
     } catch (error) {
       console.error('Error fetching slots:', error)
       toast.error('Failed to load available slots')
@@ -94,12 +82,24 @@ export default function BookPage() {
         return
       }
 
+      // Get the current user's app user ID
+      const { data: appUser, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', user.email)
+        .single()
+
+      if (userError || !appUser) {
+        toast.error('User not found. Please contact administrator.')
+        return
+      }
+
       // Book the slot
       const { error } = await supabase
         .from('lab_slots')
         .update({
           status: 'booked',
-          booked_by: user.id
+          booked_by: appUser.id
         })
         .eq('id', slotId)
 
@@ -130,7 +130,7 @@ export default function BookPage() {
     return slots.filter(slot => slot.date === date)
   }
 
-  const isSlotAvailable = (slot: SlotWithBookings) => {
+  const isSlotAvailable = (slot: LabSlot) => {
     return slot.status === 'available' && !slot.booked_by
   }
 
