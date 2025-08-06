@@ -163,49 +163,61 @@ export default function BookingSettings() {
       setCustomDuration('') // Clear custom duration when selecting preset
     }
 
-    const handleQuickOpen = async (minutes: number) => {
-      try {
-        const now = new Date()
-        const endTime = new Date(now.getTime() + minutes * 60 * 1000)
-        
-        // Get current user ID first
-        const { data: currentUser, error: userError } = await supabase
-          .from('users')
-          .select('id')
-          .eq('email', user?.email)
-          .single()
+         const handleQuickOpen = async (minutes: number) => {
+       try {
+         console.log('Opening booking for', minutes, 'minutes')
+         const now = new Date()
+         const endTime = new Date(now.getTime() + minutes * 60 * 1000)
+         
+         // Get current user ID first
+         const { data: currentUser, error: userError } = await supabase
+           .from('users')
+           .select('id')
+           .eq('email', user?.email)
+           .single()
 
-        if (userError) throw userError
+         if (userError) {
+           console.error('User error in quick open:', userError)
+           throw userError
+         }
 
-        const { error } = await supabase
-          .from('booking_system_settings')
-          .upsert({
-            ...settings,
-            is_emergency_booking_open: true,
-            emergency_booking_start: now.toISOString(),
-            emergency_booking_end: endTime.toISOString(),
-            emergency_message: `Emergency booking open for ${minutes} minutes. Book now!`,
-            updated_by: currentUser.id,
-            updated_at: now.toISOString()
-          })
+         console.log('Current user for quick open:', currentUser)
 
-        if (error) throw error
+         const { error } = await supabase
+           .from('booking_system_settings')
+           .upsert({
+             ...settings,
+             is_emergency_booking_open: true,
+             emergency_booking_start: now.toISOString(),
+             emergency_booking_end: endTime.toISOString(),
+             emergency_message: `Emergency booking open for ${minutes} minutes. Book now!`,
+             updated_by: currentUser.id,
+             updated_at: now.toISOString()
+           })
 
-        // Update local state
-        setSettings(prev => ({
-          ...prev,
-          is_emergency_booking_open: true,
-          emergency_booking_start: now.toISOString(),
-          emergency_booking_end: endTime.toISOString(),
-          emergency_message: `Emergency booking open for ${minutes} minutes. Book now!`
-        }))
+         if (error) {
+           console.error('Database error in quick open:', error)
+           throw error
+         }
 
-                 toast.success(`Booking opened for ${minutes} minutes!`)
-      } catch (error) {
-        console.error('Error opening quick booking:', error)
-        toast.error('Failed to open booking')
-      }
-    }
+         console.log('Booking opened successfully')
+
+         // Update local state
+         setSettings(prev => ({
+           ...prev,
+           is_emergency_booking_open: true,
+           emergency_booking_start: now.toISOString(),
+           emergency_booking_end: endTime.toISOString(),
+           emergency_message: `Emergency booking open for ${minutes} minutes. Book now!`
+         }))
+
+                  toast.success(`Booking opened for ${minutes} minutes!`)
+       } catch (error: any) {
+         console.error('Error opening quick booking:', error)
+         const errorMessage = error?.message || error?.details || 'Unknown error occurred'
+         toast.error(`Failed to open booking: ${errorMessage}`)
+       }
+     }
 
        const handleManualOpen = async () => {
       try {
@@ -335,6 +347,8 @@ export default function BookingSettings() {
         }
 
         try {
+          console.log('Adding slot with data:', newSlot)
+          
           // Get current user ID
           const { data: currentUser, error: userError } = await supabase
             .from('users')
@@ -342,7 +356,12 @@ export default function BookingSettings() {
             .eq('email', user?.email)
             .single()
 
-          if (userError) throw userError
+          if (userError) {
+            console.error('User error:', userError)
+            throw userError
+          }
+
+          console.log('Current user:', currentUser)
 
           const { data, error } = await supabase
             .from('booking_slots')
@@ -356,14 +375,19 @@ export default function BookingSettings() {
             .select()
             .single()
 
-          if (error) throw error
+          if (error) {
+            console.error('Database error:', error)
+            throw error
+          }
 
+          console.log('Slot added successfully:', data)
           setBookingSlots(prev => [...prev, data])
           setNewSlot({ date: '', start_time: '', end_time: '' })
           toast.success('Booking slot added successfully!')
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error adding slot:', error)
-          toast.error('Failed to add booking slot')
+          const errorMessage = error?.message || error?.details || 'Unknown error occurred'
+          toast.error(`Failed to add booking slot: ${errorMessage}`)
         }
       }
 
