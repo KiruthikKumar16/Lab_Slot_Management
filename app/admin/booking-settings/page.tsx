@@ -98,33 +98,27 @@ export default function BookingSettings() {
          .from('booking_system_settings')
          .select('*')
          .order('updated_at', { ascending: false })
-         .limit(10)
+         .limit(20)
 
        if (error) throw error
 
        if (data && data.length > 0) {
-         // Create a more comprehensive history by processing each record
+         // Create a proper chronological history
          const history: any[] = []
          
-         for (let i = 0; i < Math.min(data.length, 4); i++) {
+         // Process records in reverse chronological order to build proper timeline
+         for (let i = data.length - 1; i >= 0; i--) {
            const record = data[i]
            
-           // Add the current state
-           history.push({
-             id: `${record.id}_current`,
-             action: record.is_emergency_booking_open ? 'opened' : 'closed',
-             timestamp: record.updated_at,
-             startTime: record.emergency_booking_start,
-             endTime: record.emergency_booking_end,
-             message: record.emergency_message
-           })
-           
-           // If this record has emergency booking data, add the start event too
-           if (record.emergency_booking_start && record.is_emergency_booking_open) {
+           // Only add if this record represents a state change
+           if (record.emergency_booking_start || record.is_emergency_booking_open === false) {
+             const action = record.is_emergency_booking_open ? 'opened' : 'closed'
+             const timestamp = record.is_emergency_booking_open ? record.emergency_booking_start : record.updated_at
+             
              history.push({
-               id: `${record.id}_start`,
-               action: 'opened',
-               timestamp: record.emergency_booking_start,
+               id: `${record.id}_${action}`,
+               action: action,
+               timestamp: timestamp,
                startTime: record.emergency_booking_start,
                endTime: record.emergency_booking_end,
                message: record.emergency_message
@@ -132,47 +126,44 @@ export default function BookingSettings() {
            }
          }
          
-         // Sort by timestamp and take the last 4
-         const sortedHistory = history
-           .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-           .slice(0, 4)
-         
-         setOverrideHistory(sortedHistory)
+         // Take the last 4 entries (most recent)
+         const recentHistory = history.slice(-4)
+         setOverrideHistory(recentHistory)
        } else {
          // If no data, create some sample history for demonstration
          const now = new Date()
          const sampleHistory = [
            {
              id: 'sample_1',
-             action: 'opened',
+             action: 'closed',
              timestamp: new Date(now.getTime() - 30 * 60 * 1000).toISOString(), // 30 mins ago
-             startTime: new Date(now.getTime() - 30 * 60 * 1000).toISOString(),
-             endTime: new Date(now.getTime() + 30 * 60 * 1000).toISOString(),
-             message: 'Emergency booking opened for 1 hour'
+             startTime: undefined,
+             endTime: undefined,
+             message: 'Emergency booking closed'
            },
            {
              id: 'sample_2',
-             action: 'closed',
-             timestamp: new Date(now.getTime() - 60 * 60 * 1000).toISOString(), // 1 hour ago
-             startTime: undefined,
-             endTime: undefined,
-             message: 'Emergency booking closed'
-           },
-           {
-             id: 'sample_3',
              action: 'opened',
-             timestamp: new Date(now.getTime() - 90 * 60 * 1000).toISOString(), // 1.5 hours ago
-             startTime: new Date(now.getTime() - 90 * 60 * 1000).toISOString(),
-             endTime: new Date(now.getTime() - 60 * 60 * 1000).toISOString(),
+             timestamp: new Date(now.getTime() - 60 * 60 * 1000).toISOString(), // 1 hour ago
+             startTime: new Date(now.getTime() - 60 * 60 * 1000).toISOString(),
+             endTime: new Date(now.getTime() - 30 * 60 * 1000).toISOString(),
              message: 'Emergency booking opened for 30 minutes'
            },
            {
-             id: 'sample_4',
+             id: 'sample_3',
              action: 'closed',
-             timestamp: new Date(now.getTime() - 120 * 60 * 1000).toISOString(), // 2 hours ago
+             timestamp: new Date(now.getTime() - 90 * 60 * 1000).toISOString(), // 1.5 hours ago
              startTime: undefined,
              endTime: undefined,
              message: 'Emergency booking closed'
+           },
+           {
+             id: 'sample_4',
+             action: 'opened',
+             timestamp: new Date(now.getTime() - 120 * 60 * 1000).toISOString(), // 2 hours ago
+             startTime: new Date(now.getTime() - 120 * 60 * 1000).toISOString(),
+             endTime: new Date(now.getTime() - 90 * 60 * 1000).toISOString(),
+             message: 'Emergency booking opened for 30 minutes'
            }
          ]
          setOverrideHistory(sampleHistory)
@@ -184,35 +175,35 @@ export default function BookingSettings() {
        const sampleHistory = [
          {
            id: 'fallback_1',
-           action: 'opened',
+           action: 'closed',
            timestamp: new Date(now.getTime() - 30 * 60 * 1000).toISOString(),
-           startTime: new Date(now.getTime() - 30 * 60 * 1000).toISOString(),
-           endTime: new Date(now.getTime() + 30 * 60 * 1000).toISOString(),
-           message: 'Emergency booking opened for 1 hour'
+           startTime: undefined,
+           endTime: undefined,
+           message: 'Emergency booking closed'
          },
          {
            id: 'fallback_2',
-           action: 'closed',
-           timestamp: new Date(now.getTime() - 60 * 60 * 1000).toISOString(),
-           startTime: undefined,
-           endTime: undefined,
-           message: 'Emergency booking closed'
-         },
-         {
-           id: 'fallback_3',
            action: 'opened',
-           timestamp: new Date(now.getTime() - 90 * 60 * 1000).toISOString(),
-           startTime: new Date(now.getTime() - 90 * 60 * 1000).toISOString(),
-           endTime: new Date(now.getTime() - 60 * 60 * 1000).toISOString(),
+           timestamp: new Date(now.getTime() - 60 * 60 * 1000).toISOString(),
+           startTime: new Date(now.getTime() - 60 * 60 * 1000).toISOString(),
+           endTime: new Date(now.getTime() - 30 * 60 * 1000).toISOString(),
            message: 'Emergency booking opened for 30 minutes'
          },
          {
-           id: 'fallback_4',
+           id: 'fallback_3',
            action: 'closed',
-           timestamp: new Date(now.getTime() - 120 * 60 * 1000).toISOString(),
+           timestamp: new Date(now.getTime() - 90 * 60 * 1000).toISOString(),
            startTime: undefined,
            endTime: undefined,
            message: 'Emergency booking closed'
+         },
+         {
+           id: 'fallback_4',
+           action: 'opened',
+           timestamp: new Date(now.getTime() - 120 * 60 * 1000).toISOString(),
+           startTime: new Date(now.getTime() - 120 * 60 * 1000).toISOString(),
+           endTime: new Date(now.getTime() - 90 * 60 * 1000).toISOString(),
+           message: 'Emergency booking opened for 30 minutes'
          }
        ]
        setOverrideHistory(sampleHistory)
