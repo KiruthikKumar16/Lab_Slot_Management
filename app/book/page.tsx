@@ -17,6 +17,7 @@ export default function BookPage() {
   const [selectedDate, setSelectedDate] = useState('')
   const [bookingLoading, setBookingLoading] = useState<string | null>(null)
   const [bookingSettings, setBookingSettings] = useState<BookingSystemSettings | null>(null)
+  const [bookedSlots, setBookedSlots] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (!user) {
@@ -26,6 +27,7 @@ export default function BookPage() {
 
     fetchBookingSettings()
     fetchSlots()
+    fetchUserBookings()
   }, [user, router])
 
   const fetchBookingSettings = async () => {
@@ -78,6 +80,34 @@ export default function BookPage() {
       toast.error('Failed to load available slots')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchUserBookings = async () => {
+    try {
+      // Get current user ID
+      const { data: currentUser, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', user?.email)
+        .single()
+
+      if (userError) throw userError
+
+      // Fetch slots booked by this user
+      const { data, error } = await supabase
+        .from('lab_slots')
+        .select('id')
+        .eq('booked_by', currentUser.id)
+        .eq('status', 'booked')
+
+      if (error) throw error
+
+      // Create a set of booked slot IDs
+      const bookedSlotIds = new Set(data?.map(slot => slot.id) || [])
+      setBookedSlots(bookedSlotIds)
+    } catch (error) {
+      console.error('Error fetching user bookings:', error)
     }
   }
 
@@ -184,6 +214,8 @@ export default function BookPage() {
       if (error) throw error
 
       toast.success('Slot booked successfully!')
+      // Add to booked slots set
+      setBookedSlots(prev => new Set(Array.from(prev).concat(slotId)))
       fetchSlots()
     } catch (error) {
       console.error('Error booking slot:', error)
@@ -208,8 +240,41 @@ export default function BookPage() {
     return slots.filter(slot => slot.date === date)
   }
 
+  const isSlotExpired = (slot: LabSlot) => {
+    const now = new Date()
+    const slotDate = new Date(slot.date)
+    const slotStartTime = new Date(`${slot.date}T${slot.start_time}`)
+    
+    // Check if slot date is in the past
+    if (slotDate < now && slotDate.toDateString() !== now.toDateString()) {
+      return true
+    }
+    
+    // Check if slot time has passed today
+    if (slotDate.toDateString() === now.toDateString() && slotStartTime < now) {
+      return true
+    }
+    
+    return false
+  }
+
   const isSlotAvailable = (slot: LabSlot) => {
+    // Check if slot is expired
+    if (isSlotExpired(slot)) {
+      return false
+    }
+    
+    // Check if slot is already booked by current user
+    if (bookedSlots.has(slot.id)) {
+      return false
+    }
+    
+    // Check if slot is available and not booked by anyone
     return slot.status === 'available' && !slot.booked_by
+  }
+
+  const isSlotBookedByUser = (slot: LabSlot) => {
+    return bookedSlots.has(slot.id)
   }
 
   if (loading) {
@@ -292,14 +357,28 @@ export default function BookPage() {
             (selectedDate ? getSlotsForDate(selectedDate) : slots).map((slot) => {
               const isAvailable = isSlotAvailable(slot)
               const isBooked = bookingLoading === slot.id
+              const isExpired = isSlotExpired(slot)
+              const isBookedByUser = isSlotBookedByUser(slot)
 
               return (
                 <div key={slot.id} className="glass-card p-6">
                   <div className="flex items-start justify-between mb-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      isExpired 
+                        ? 'bg-gray-100 text-gray-600' 
+                        : isBookedByUser 
+                          ? 'bg-blue-100 text-blue-800'
+                          : isAvailable 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
                     }`}>
-                      {isAvailable ? 'Available' : 'Booked'}
+                      {isExpired 
+                        ? 'Expired' 
+                        : isBookedByUser 
+                          ? 'Booked'
+                          : isAvailable 
+                            ? 'Available' 
+                            : 'Booked'}
                     </span>
                   </div>
 
@@ -335,11 +414,15 @@ export default function BookPage() {
 
                   <button
                     onClick={() => handleBookSlot(slot.id)}
-                    disabled={!isAvailable || !isBookingAllowed() || isBooked}
+                    disabled={!isAvailable || !isBookingAllowed() || isBooked || isExpired}
                     className={`w-full py-3 rounded-xl font-semibold transition-all duration-300 ${
-                      isAvailable && isBookingAllowed()
-                        ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white hover:from-blue-700 hover:to-indigo-800'
-                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                      isExpired
+                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                        : isBookedByUser
+                          ? 'bg-blue-600 text-white cursor-not-allowed'
+                          : isAvailable && isBookingAllowed()
+                            ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white hover:from-blue-700 hover:to-indigo-800'
+                            : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                     }`}
                   >
                     {isBooked ? (
@@ -347,6 +430,10 @@ export default function BookPage() {
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         <span>Booking...</span>
                       </div>
+                    ) : isExpired ? (
+                      'Expired'
+                    ) : isBookedByUser ? (
+                      'Booked'
                     ) : (
                       'Book This Slot'
                     )}
