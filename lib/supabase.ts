@@ -55,6 +55,12 @@ export interface BookingSystemSettings {
   emergency_booking_end?: string
   emergency_allowed_days?: string[]
   regular_allowed_days: string[]
+  regular_booking_start_time?: string
+  regular_booking_end_time?: string
+  manual_override_type?: 'open' | 'closed' | null
+  manual_override_start?: string
+  manual_override_end?: string
+  manual_override_days?: string[]
   message: string
   emergency_message: string
   updated_by?: number

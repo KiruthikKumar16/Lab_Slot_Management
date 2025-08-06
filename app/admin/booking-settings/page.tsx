@@ -23,7 +23,13 @@ export default function BookingSettings() {
     emergency_booking_end: undefined,
     emergency_allowed_days: [],
     regular_allowed_days: ['sunday'],
-    message: 'Regular booking is available every Sunday. Check back on Sunday to book your lab session.',
+    regular_booking_start_time: '09:00',
+    regular_booking_end_time: '11:00',
+    manual_override_type: null, // 'open' | 'closed' | null
+    manual_override_start: undefined,
+    manual_override_end: undefined,
+    manual_override_days: [],
+    message: 'Regular booking is available every Sunday from 9 AM to 11 AM. Check back during scheduled times to book your lab session.',
     emergency_message: 'Emergency booking is currently open due to slot availability. Book now!',
     updated_at: new Date().toISOString()
   })
@@ -243,7 +249,7 @@ export default function BookingSettings() {
               >
                 <div className="flex items-center justify-center space-x-2">
                   <Shield className="w-5 h-5" />
-                  <span>Regular Booking</span>
+                  <span>Scheduled Booking</span>
                 </div>
               </button>
               <button
@@ -256,22 +262,22 @@ export default function BookingSettings() {
               >
                 <div className="flex items-center justify-center space-x-2">
                   <Zap className="w-5 h-5" />
-                  <span>Emergency Booking</span>
+                  <span>Manual Override</span>
                 </div>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Regular Booking Settings */}
-        {activeMode === 'regular' && (
-          <div className="glass-card p-6 mb-6">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                <Shield className="w-5 h-5 text-white" />
-              </div>
-              <h2 className="text-xl font-semibold text-slate-800">Regular Booking (Sunday Schedule)</h2>
-            </div>
+                 {/* Scheduled Booking Settings */}
+         {activeMode === 'regular' && (
+           <div className="glass-card p-6 mb-6">
+             <div className="flex items-center space-x-3 mb-6">
+               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                 <Shield className="w-5 h-5 text-white" />
+               </div>
+               <h2 className="text-xl font-semibold text-slate-800">Scheduled Booking (Automatic Timetable)</h2>
+             </div>
             
             <div className="space-y-6">
               {/* Regular Booking Status */}
@@ -292,23 +298,51 @@ export default function BookingSettings() {
                 </div>
               </div>
 
-              {/* Regular Allowed Days */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-4">Regular Booking Days</label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {daysOfWeek.map(day => (
-                    <label key={day.value} className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-slate-200 hover:border-blue-300 transition-colors cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={settings.regular_allowed_days.includes(day.value)}
-                        onChange={() => handleRegularDayToggle(day.value)}
-                        className="w-4 h-4 text-blue-600 bg-white border-slate-300 rounded focus:ring-blue-500"
-                      />
-                      <span className="text-sm font-medium text-slate-700">{day.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+                             {/* Scheduled Time Range */}
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div>
+                   <label className="block text-sm font-medium text-slate-700 mb-3">Start Time</label>
+                   <div className="relative">
+                     <Clock className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                     <input
+                       type="time"
+                       value={settings.regular_booking_start_time || '09:00'}
+                       onChange={(e) => setSettings(prev => ({ ...prev, regular_booking_start_time: e.target.value }))}
+                       className="w-full pl-10 pr-3 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-slate-800"
+                     />
+                   </div>
+                 </div>
+                 <div>
+                   <label className="block text-sm font-medium text-slate-700 mb-3">End Time</label>
+                   <div className="relative">
+                     <Clock className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                     <input
+                       type="time"
+                       value={settings.regular_booking_end_time || '11:00'}
+                       onChange={(e) => setSettings(prev => ({ ...prev, regular_booking_end_time: e.target.value }))}
+                       className="w-full pl-10 pr-3 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-slate-800"
+                     />
+                   </div>
+                 </div>
+               </div>
+
+               {/* Scheduled Allowed Days */}
+               <div>
+                 <label className="block text-sm font-medium text-slate-700 mb-4">Scheduled Booking Days</label>
+                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                   {daysOfWeek.map(day => (
+                     <label key={day.value} className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-slate-200 hover:border-blue-300 transition-colors cursor-pointer">
+                       <input
+                         type="checkbox"
+                         checked={settings.regular_allowed_days.includes(day.value)}
+                         onChange={() => handleRegularDayToggle(day.value)}
+                         className="w-4 h-4 text-blue-600 bg-white border-slate-300 rounded focus:ring-blue-500"
+                       />
+                       <span className="text-sm font-medium text-slate-700">{day.label}</span>
+                     </label>
+                   ))}
+                 </div>
+               </div>
 
                              {/* Regular Message */}
                <div>
@@ -349,139 +383,164 @@ export default function BookingSettings() {
            </div>
          )}
 
-        {/* Emergency Booking Settings */}
-        {activeMode === 'emergency' && (
-          <div className="glass-card p-6 mb-6">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
-              <h2 className="text-xl font-semibold text-slate-800">Emergency Booking (Admin Override)</h2>
-            </div>
+                 {/* Manual Override Settings */}
+         {activeMode === 'emergency' && (
+           <div className="glass-card p-6 mb-6">
+             <div className="flex items-center space-x-3 mb-6">
+               <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
+                 <Zap className="w-5 h-5 text-white" />
+               </div>
+               <h2 className="text-xl font-semibold text-slate-800">Manual Override (Admin Control)</h2>
+             </div>
             
             <div className="space-y-6">
-              {/* Emergency Booking Status */}
-              <div className="flex items-center justify-between p-4 bg-orange-50 rounded-xl">
-                <div className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    checked={settings.is_emergency_booking_open}
-                    onChange={(e) => setSettings(prev => ({ ...prev, is_emergency_booking_open: e.target.checked }))}
-                    className="w-5 h-5 text-orange-600 bg-white border-orange-300 rounded focus:ring-orange-500"
-                  />
-                  <div>
-                    <span className="font-semibold text-slate-800">Enable Emergency Booking</span>
-                    <p className="text-sm text-slate-600">
-                      Open booking on weekdays when slots become available due to cancellations
-                    </p>
-                  </div>
-                </div>
-              </div>
+                             {/* Manual Override Type */}
+               <div className="flex items-center justify-between p-4 bg-orange-50 rounded-xl">
+                 <div className="flex items-center space-x-3">
+                   <div className="flex space-x-4">
+                     <label className="flex items-center space-x-2">
+                       <input
+                         type="radio"
+                         name="overrideType"
+                         value="open"
+                         checked={settings.manual_override_type === 'open'}
+                         onChange={(e) => setSettings(prev => ({ ...prev, manual_override_type: e.target.value as 'open' | 'closed' | null }))}
+                         className="w-4 h-4 text-orange-600 bg-white border-orange-300 rounded focus:ring-orange-500"
+                       />
+                       <span className="font-semibold text-slate-800">Open Extra Time</span>
+                     </label>
+                     <label className="flex items-center space-x-2">
+                       <input
+                         type="radio"
+                         name="overrideType"
+                         value="closed"
+                         checked={settings.manual_override_type === 'closed'}
+                         onChange={(e) => setSettings(prev => ({ ...prev, manual_override_type: e.target.value as 'open' | 'closed' | null }))}
+                         className="w-4 h-4 text-orange-600 bg-white border-orange-300 rounded focus:ring-orange-500"
+                       />
+                       <span className="font-semibold text-slate-800">Block Booking</span>
+                     </label>
+                     <label className="flex items-center space-x-2">
+                       <input
+                         type="radio"
+                         name="overrideType"
+                         value="null"
+                         checked={settings.manual_override_type === null}
+                         onChange={(e) => setSettings(prev => ({ ...prev, manual_override_type: null }))}
+                         className="w-4 h-4 text-orange-600 bg-white border-orange-300 rounded focus:ring-orange-500"
+                       />
+                       <span className="font-semibold text-slate-800">No Override</span>
+                     </label>
+                   </div>
+                   <div>
+                     <p className="text-sm text-slate-600">
+                       Open Extra Time: Add bonus booking hours | Block Booking: Prevent booking during specific times
+                     </p>
+                   </div>
+                 </div>
+               </div>
 
-              {/* Emergency Time Range */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-3">Emergency Start Time</label>
-                  <div className="relative">
-                    <Clock className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-                    <input
-                      type="datetime-local"
-                      value={settings.emergency_booking_start || ''}
-                      onChange={(e) => setSettings(prev => ({ ...prev, emergency_booking_start: e.target.value }))}
-                      className="w-full pl-10 pr-3 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white text-slate-800"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-3">Emergency End Time</label>
-                  <div className="relative">
-                    <Clock className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-                    <input
-                      type="datetime-local"
-                      value={settings.emergency_booking_end || ''}
-                      onChange={(e) => setSettings(prev => ({ ...prev, emergency_booking_end: e.target.value }))}
-                      className="w-full pl-10 pr-3 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white text-slate-800"
-                    />
-                  </div>
-                </div>
-              </div>
+               {/* Manual Override Time Range */}
+               {settings.manual_override_type && (
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <div>
+                     <label className="block text-sm font-medium text-slate-700 mb-3">Override Start Time</label>
+                     <div className="relative">
+                       <Clock className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                       <input
+                         type="time"
+                         value={settings.manual_override_start || ''}
+                         onChange={(e) => setSettings(prev => ({ ...prev, manual_override_start: e.target.value }))}
+                         className="w-full pl-10 pr-3 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white text-slate-800"
+                       />
+                     </div>
+                   </div>
+                   <div>
+                     <label className="block text-sm font-medium text-slate-700 mb-3">Override End Time</label>
+                     <div className="relative">
+                       <Clock className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                       <input
+                         type="time"
+                         value={settings.manual_override_end || ''}
+                         onChange={(e) => setSettings(prev => ({ ...prev, manual_override_end: e.target.value }))}
+                         className="w-full pl-10 pr-3 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white text-slate-800"
+                       />
+                     </div>
+                   </div>
+                 </div>
+               )}
 
-              {/* Emergency Allowed Days */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-4">Emergency Booking Days</label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {daysOfWeek.map(day => (
-                    <label key={day.value} className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-slate-200 hover:border-orange-300 transition-colors cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={settings.emergency_allowed_days?.includes(day.value) || false}
-                        onChange={() => handleEmergencyDayToggle(day.value)}
-                        className="w-4 h-4 text-orange-600 bg-white border-slate-300 rounded focus:ring-orange-500"
-                      />
-                      <span className="text-sm font-medium text-slate-700">{day.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Emergency Message */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-3">Emergency Booking Message</label>
-                <div className="relative">
-                  <MessageSquare className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-                  <textarea
-                    value={settings.emergency_message}
-                    onChange={(e) => setSettings(prev => ({ ...prev, emergency_message: e.target.value }))}
-                    rows={3}
-                    className="w-full pl-10 pr-3 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white text-slate-800"
-                    placeholder="Message to show when emergency booking is open..."
-                  />
-                </div>
-              </div>
+               {/* Manual Override Days */}
+               {settings.manual_override_type && (
+                 <div>
+                   <label className="block text-sm font-medium text-slate-700 mb-4">Override Days</label>
+                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                     {daysOfWeek.map(day => (
+                       <label key={day.value} className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-slate-200 hover:border-orange-300 transition-colors cursor-pointer">
+                         <input
+                           type="checkbox"
+                           checked={settings.manual_override_days?.includes(day.value) || false}
+                           onChange={() => {
+                             setSettings(prev => ({
+                               ...prev,
+                               manual_override_days: prev.manual_override_days?.includes(day.value)
+                                 ? prev.manual_override_days.filter(d => d !== day.value)
+                                 : [...(prev.manual_override_days || []), day.value]
+                             }))
+                           }}
+                           className="w-4 h-4 text-orange-600 bg-white border-slate-300 rounded focus:ring-orange-500"
+                         />
+                         <span className="text-sm font-medium text-slate-700">{day.label}</span>
+                       </label>
+                     ))}
+                   </div>
+                 </div>
+               )}
             </div>
           </div>
         )}
 
-        {/* Quick Actions - Only show in Emergency mode */}
-        {activeMode === 'emergency' && (
-          <div className="glass-card p-6 mb-6">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
-              <h3 className="text-lg font-semibold text-slate-800">Quick Actions</h3>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button
-                onClick={() => setSettings(prev => ({
-                  ...prev,
-                  is_emergency_booking_open: true,
-                  emergency_booking_start: new Date().toISOString().slice(0, 16),
-                  emergency_booking_end: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString().slice(0, 16), // 4 hours from now
-                  emergency_allowed_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
-                }))}
-                className="flex items-center justify-center space-x-3 bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-3 rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-300 shadow-lg hover:shadow-xl"
-              >
-                <Zap className="w-5 h-5" />
-                <span>Open Emergency Booking (4 hours)</span>
-              </button>
-              
-              <button
-                onClick={() => setSettings(prev => ({
-                  ...prev,
-                  is_emergency_booking_open: false,
-                  emergency_booking_start: undefined,
-                  emergency_booking_end: undefined
-                }))}
-                className="flex items-center justify-center space-x-3 bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-3 rounded-xl font-semibold hover:from-red-700 hover:to-red-800 transition-all duration-300 shadow-lg hover:shadow-xl"
-              >
-                <XCircle className="w-5 h-5" />
-                <span>Close Emergency Booking</span>
-              </button>
-            </div>
-          </div>
-        )}
+                 {/* Quick Actions - Only show in Manual Override mode */}
+         {activeMode === 'emergency' && (
+           <div className="glass-card p-6 mb-6">
+             <div className="flex items-center space-x-3 mb-4">
+               <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
+                 <Zap className="w-5 h-5 text-white" />
+               </div>
+               <h3 className="text-lg font-semibold text-slate-800">Quick Actions</h3>
+             </div>
+             
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <button
+                 onClick={() => setSettings(prev => ({
+                   ...prev,
+                   manual_override_type: 'open',
+                   manual_override_start: '14:00',
+                   manual_override_end: '16:00',
+                   manual_override_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+                 }))}
+                 className="flex items-center justify-center space-x-3 bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-3 rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-300 shadow-lg hover:shadow-xl"
+               >
+                 <Zap className="w-5 h-5" />
+                 <span>Open Extra Time (2-4 PM Weekdays)</span>
+               </button>
+               
+               <button
+                 onClick={() => setSettings(prev => ({
+                   ...prev,
+                   manual_override_type: null,
+                   manual_override_start: undefined,
+                   manual_override_end: undefined,
+                   manual_override_days: []
+                 }))}
+                 className="flex items-center justify-center space-x-3 bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-3 rounded-xl font-semibold hover:from-red-700 hover:to-red-800 transition-all duration-300 shadow-lg hover:shadow-xl"
+               >
+                 <XCircle className="w-5 h-5" />
+                 <span>Remove All Overrides</span>
+               </button>
+             </div>
+           </div>
+         )}
 
 
       </div>
