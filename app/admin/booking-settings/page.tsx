@@ -65,9 +65,21 @@ export default function BookingSettings() {
       return
     }
 
-                             fetchSettings()
-      fetchBookingSlots()
-   }, [user, isAdmin, router])
+    fetchSettings()
+    fetchBookingSlots()
+    
+    // Check for expired booking immediately on load
+    setTimeout(() => {
+      checkAndCloseExpiredBooking()
+    }, 1000) // Check after 1 second to ensure settings are loaded
+    
+    // Set up interval to check for expired booking sessions
+    const interval = setInterval(() => {
+      checkAndCloseExpiredBooking()
+    }, 30000) // Check every 30 seconds
+
+    return () => clearInterval(interval)
+  }, [user, isAdmin, router])
 
    const fetchBookingSlots = async () => {
      try {
@@ -91,7 +103,61 @@ export default function BookingSettings() {
 
    
 
-   const fetchSettings = async () => {
+   const checkAndCloseExpiredBooking = async () => {
+    try {
+      // Only check if booking is currently open
+      if (!settings.is_emergency_booking_open || !settings.emergency_booking_end) {
+        return
+      }
+
+      const now = new Date()
+      const endTime = new Date(settings.emergency_booking_end)
+
+      // Check if booking session has expired
+      if (now > endTime) {
+        console.log('Booking session expired, auto-closing...')
+        
+        // Get current user ID
+        const { data: currentUser, error: userError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', user?.email)
+          .single()
+
+        if (userError) throw userError
+
+        // Close the booking session
+        const { error } = await supabase
+          .from('booking_system_settings')
+          .upsert({
+            ...settings,
+            is_emergency_booking_open: false,
+            emergency_booking_start: undefined,
+            emergency_booking_end: undefined,
+            emergency_message: 'Emergency booking is currently closed.',
+            updated_by: currentUser.id,
+            updated_at: now.toISOString()
+          })
+
+        if (error) throw error
+
+        // Update local state
+        setSettings(prev => ({
+          ...prev,
+          is_emergency_booking_open: false,
+          emergency_booking_start: undefined,
+          emergency_booking_end: undefined,
+          emergency_message: 'Emergency booking is currently closed.'
+        }))
+
+        toast.success('Booking session auto-closed due to expiration')
+      }
+    } catch (error) {
+      console.error('Error checking expired booking:', error)
+    }
+  }
+
+  const fetchSettings = async () => {
     try {
       setLoading(true)
       
