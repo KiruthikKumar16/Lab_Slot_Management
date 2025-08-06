@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { Settings, Calendar, Clock, Save, AlertTriangle, Shield, Zap, CheckCircle, XCircle, Users, MessageSquare } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { BookingSystemSettings } from '@/lib/supabase'
+import { BookingSystemSettings, BookingSlot } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import Navigation from '@/components/Navigation'
 
@@ -16,14 +16,14 @@ export default function BookingSettings() {
    const [saving, setSaving] = useState(false)
    const [customDuration, setCustomDuration] = useState('')
    const [selectedDuration, setSelectedDuration] = useState<number | null>(null)
-   const [bookingSlots, setBookingSlots] = useState<any[]>([])
+       const [bookingSlots, setBookingSlots] = useState<BookingSlot[]>([])
    
-   const [newSlot, setNewSlot] = useState({
-     date: '',
-     startTime: '',
-     endTime: ''
-   })
-   const [editingSlot, setEditingSlot] = useState<any>(null)
+       const [newSlot, setNewSlot] = useState({
+      date: '',
+      start_time: '',
+      end_time: ''
+    })
+       const [editingSlot, setEditingSlot] = useState<BookingSlot | null>(null)
    const [showEditModal, setShowEditModal] = useState(false)
    const [settings, setSettings] = useState<BookingSystemSettings>({
     id: 1,
@@ -72,19 +72,17 @@ export default function BookingSettings() {
    const fetchBookingSlots = async () => {
      try {
        const { data, error } = await supabase
-         .from('booking_system_settings')
+         .from('booking_slots')
          .select('*')
-         .order('updated_at', { ascending: false })
-         .limit(10)
+         .order('date', { ascending: true })
 
        if (error) throw error
 
-       // For now, we'll use mock data since we don't have a separate booking slots table
-       setBookingSlots([
-         { id: 1, date: '2025-08-10', startTime: '09:00', endTime: '11:00', status: 'open' },
-         { id: 2, date: '2025-08-11', startTime: '14:00', endTime: '16:00', status: 'open' },
-         { id: 3, date: '2025-08-13', startTime: '10:00', endTime: '12:00', status: 'closed' }
-       ])
+       if (data) {
+         setBookingSlots(data)
+       } else {
+         setBookingSlots([])
+       }
      } catch (error) {
        console.error('Error fetching booking slots:', error)
        toast.error('Failed to load booking slots')
@@ -317,34 +315,49 @@ export default function BookingSettings() {
         toast.success(`Duration set to ${minutes} minutes. Click "Open Booking Now" to start.`)
       }
 
-         const handleAddSlot = async () => {
-       if (!newSlot.date || !newSlot.startTime || !newSlot.endTime) {
-         toast.error('Please fill in all fields')
-         return
-       }
+                   const handleAddSlot = async () => {
+        if (!newSlot.date || !newSlot.start_time || !newSlot.end_time) {
+          toast.error('Please fill in all fields')
+          return
+        }
 
-       if (newSlot.startTime >= newSlot.endTime) {
-         toast.error('End time must be after start time')
-         return
-       }
+        if (newSlot.start_time >= newSlot.end_time) {
+          toast.error('End time must be after start time')
+          return
+        }
 
-       try {
-         const slot = {
-           id: Date.now(), // Temporary ID for demo
-           date: newSlot.date,
-           startTime: newSlot.startTime,
-           endTime: newSlot.endTime,
-           status: 'open'
-         }
+        try {
+          // Get current user ID
+          const { data: currentUser, error: userError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', user?.email)
+            .single()
 
-         setBookingSlots(prev => [...prev, slot])
-         setNewSlot({ date: '', startTime: '', endTime: '' })
-         toast.success('Booking slot added successfully!')
-       } catch (error) {
-         console.error('Error adding slot:', error)
-         toast.error('Failed to add booking slot')
-       }
-     }
+          if (userError) throw userError
+
+          const { data, error } = await supabase
+            .from('booking_slots')
+            .insert({
+              date: newSlot.date,
+              start_time: newSlot.start_time,
+              end_time: newSlot.end_time,
+              status: 'open',
+              created_by: currentUser.id
+            })
+            .select()
+            .single()
+
+          if (error) throw error
+
+          setBookingSlots(prev => [...prev, data])
+          setNewSlot({ date: '', start_time: '', end_time: '' })
+          toast.success('Booking slot added successfully!')
+        } catch (error) {
+          console.error('Error adding slot:', error)
+          toast.error('Failed to add booking slot')
+        }
+      }
 
            const handleEditSlot = (slotId: number) => {
         const slot = bookingSlots.find(s => s.id === slotId)
@@ -354,37 +367,67 @@ export default function BookingSettings() {
         }
       }
 
-      const handleUpdateSlot = () => {
-        if (!editingSlot) return
-        
-        if (!editingSlot.date || !editingSlot.startTime || !editingSlot.endTime) {
-          toast.error('Please fill in all fields')
-          return
-        }
+             const handleUpdateSlot = async () => {
+         if (!editingSlot) return
+         
+         if (!editingSlot.date || !editingSlot.start_time || !editingSlot.end_time) {
+           toast.error('Please fill in all fields')
+           return
+         }
 
-        if (editingSlot.startTime >= editingSlot.endTime) {
-          toast.error('End time must be after start time')
-          return
-        }
+         if (editingSlot.start_time >= editingSlot.end_time) {
+           toast.error('End time must be after start time')
+           return
+         }
 
-        setBookingSlots(prev => prev.map(slot => 
-          slot.id === editingSlot.id ? editingSlot : slot
-        ))
-        
-        setShowEditModal(false)
-        setEditingSlot(null)
-        toast.success('Booking slot updated successfully!')
-      }
+         try {
+           const { error } = await supabase
+             .from('booking_slots')
+             .update({
+               date: editingSlot.date,
+               start_time: editingSlot.start_time,
+               end_time: editingSlot.end_time,
+               status: editingSlot.status,
+               updated_at: new Date().toISOString()
+             })
+             .eq('id', editingSlot.id)
+
+           if (error) throw error
+
+           setBookingSlots(prev => prev.map(slot => 
+             slot.id === editingSlot.id ? editingSlot : slot
+           ))
+           
+           setShowEditModal(false)
+           setEditingSlot(null)
+           toast.success('Booking slot updated successfully!')
+         } catch (error) {
+           console.error('Error updating slot:', error)
+           toast.error('Failed to update booking slot')
+         }
+       }
 
       const handleCancelEdit = () => {
         setShowEditModal(false)
         setEditingSlot(null)
       }
 
-     const handleDeleteSlot = (slotId: number) => {
-       setBookingSlots(prev => prev.filter(s => s.id !== slotId))
-       toast.success('Booking slot deleted successfully!')
-     }
+           const handleDeleteSlot = async (slotId: number) => {
+        try {
+          const { error } = await supabase
+            .from('booking_slots')
+            .delete()
+            .eq('id', slotId)
+
+          if (error) throw error
+
+          setBookingSlots(prev => prev.filter(s => s.id !== slotId))
+          toast.success('Booking slot deleted successfully!')
+        } catch (error) {
+          console.error('Error deleting slot:', error)
+          toast.error('Failed to delete booking slot')
+        }
+      }
 
     const getDurationText = (startTime?: string, endTime?: string) => {
       if (!startTime || !endTime) return 'Manual (no auto-close)'
@@ -467,8 +510,8 @@ export default function BookingSettings() {
                   <label className="block text-sm font-medium text-slate-700 mb-2">Start Time</label>
                   <input
                     type="time"
-                    value={newSlot.startTime}
-                    onChange={(e) => setNewSlot(prev => ({ ...prev, startTime: e.target.value }))}
+                                         value={newSlot.start_time}
+                     onChange={(e) => setNewSlot(prev => ({ ...prev, start_time: e.target.value }))}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-slate-800"
                   />
                 </div>
@@ -476,8 +519,8 @@ export default function BookingSettings() {
                   <label className="block text-sm font-medium text-slate-700 mb-2">End Time</label>
                   <input
                     type="time"
-                    value={newSlot.endTime}
-                    onChange={(e) => setNewSlot(prev => ({ ...prev, endTime: e.target.value }))}
+                                         value={newSlot.end_time}
+                     onChange={(e) => setNewSlot(prev => ({ ...prev, end_time: e.target.value }))}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-slate-800"
                   />
                 </div>
@@ -522,9 +565,9 @@ export default function BookingSettings() {
                                day: 'numeric' 
                              })}
                            </td>
-                           <td className="px-4 py-3 text-sm text-slate-700">
-                             {slot.startTime} – {slot.endTime}
-                           </td>
+                                                       <td className="px-4 py-3 text-sm text-slate-700">
+                              {slot.start_time} – {slot.end_time}
+                            </td>
                            <td className="px-4 py-3">
                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                                slot.status === 'open' 
@@ -699,7 +742,7 @@ export default function BookingSettings() {
                     <input
                       type="date"
                       value={editingSlot.date}
-                      onChange={(e) => setEditingSlot(prev => ({ ...prev, date: e.target.value }))}
+                                             onChange={(e) => setEditingSlot(prev => prev ? { ...prev, date: e.target.value } : null)}
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-slate-800"
                     />
                   </div>
@@ -707,8 +750,8 @@ export default function BookingSettings() {
                     <label className="block text-sm font-medium text-slate-700 mb-2">Start Time</label>
                     <input
                       type="time"
-                      value={editingSlot.startTime}
-                      onChange={(e) => setEditingSlot(prev => ({ ...prev, startTime: e.target.value }))}
+                                             value={editingSlot.start_time}
+                       onChange={(e) => setEditingSlot(prev => prev ? { ...prev, start_time: e.target.value } : null)}
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-slate-800"
                     />
                   </div>
@@ -716,8 +759,8 @@ export default function BookingSettings() {
                     <label className="block text-sm font-medium text-slate-700 mb-2">End Time</label>
                     <input
                       type="time"
-                      value={editingSlot.endTime}
-                      onChange={(e) => setEditingSlot(prev => ({ ...prev, endTime: e.target.value }))}
+                                             value={editingSlot.end_time}
+                       onChange={(e) => setEditingSlot(prev => prev ? { ...prev, end_time: e.target.value } : null)}
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-slate-800"
                     />
                   </div>
@@ -725,7 +768,7 @@ export default function BookingSettings() {
                     <label className="block text-sm font-medium text-slate-700 mb-2">Status</label>
                     <select
                       value={editingSlot.status}
-                      onChange={(e) => setEditingSlot(prev => ({ ...prev, status: e.target.value }))}
+                                             onChange={(e) => setEditingSlot(prev => prev ? { ...prev, status: e.target.value as 'open' | 'closed' } : null)}
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-slate-800"
                     >
                       <option value="open">Open</option>
