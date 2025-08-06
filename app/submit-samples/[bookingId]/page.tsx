@@ -40,6 +40,15 @@ export default function SubmitSamplesPage({ params }: { params: { bookingId: str
     try {
       setLoading(true)
       
+      // Get current user ID from users table
+      const { data: currentUser, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', user?.email)
+        .single()
+
+      if (userError) throw userError
+
       const { data, error } = await supabase
         .from('bookings')
         .select(`
@@ -47,7 +56,7 @@ export default function SubmitSamplesPage({ params }: { params: { bookingId: str
           lab_slot (*)
         `)
         .eq('id', params.bookingId)
-        .eq('user_id', user?.id)
+        .eq('user_id', currentUser.id)
         .single()
 
       if (error) throw error
