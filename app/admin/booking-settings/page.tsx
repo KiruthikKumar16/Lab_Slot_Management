@@ -232,7 +232,7 @@ export default function BookingSettings() {
         {/* Mode Toggle Switch */}
         <div className="glass-card p-6 mb-6">
           <div className="flex items-center justify-center">
-            <div className="relative bg-slate-100 rounded-2xl p-1 w-96">
+            <div className="relative bg-slate-100 rounded-2xl p-1 w-full max-w-2xl">
               <button
                 onClick={() => setActiveMode('regular')}
                 className={`relative z-10 w-1/2 px-6 py-4 rounded-xl font-semibold transition-all duration-300 ${
