@@ -115,14 +115,117 @@ export default function BookingSettings() {
     }
   }
 
-  const handleRegularDayToggle = (day: string) => {
-    setSettings(prev => ({
-      ...prev,
-      regular_allowed_days: prev.regular_allowed_days.includes(day)
-        ? prev.regular_allowed_days.filter(d => d !== day)
-        : [...prev.regular_allowed_days, day]
-    }))
-  }
+     const handleRegularDayToggle = (day: string) => {
+     setSettings(prev => ({
+       ...prev,
+       regular_allowed_days: prev.regular_allowed_days.includes(day)
+         ? prev.regular_allowed_days.filter(d => d !== day)
+         : [...prev.regular_allowed_days, day]
+     }))
+   }
+
+   const handleQuickOpen = async (minutes: number) => {
+     try {
+       const now = new Date()
+       const endTime = new Date(now.getTime() + minutes * 60 * 1000)
+       
+       const { error } = await supabase
+         .from('booking_system_settings')
+         .upsert({
+           ...settings,
+           is_emergency_booking_open: true,
+           emergency_booking_start: now.toISOString(),
+           emergency_booking_end: endTime.toISOString(),
+           emergency_message: `Emergency booking open for ${minutes} minutes. Book now!`,
+           updated_by: user?.id,
+           updated_at: now.toISOString()
+         })
+
+       if (error) throw error
+
+       // Update local state
+       setSettings(prev => ({
+         ...prev,
+         is_emergency_booking_open: true,
+         emergency_booking_start: now.toISOString(),
+         emergency_booking_end: endTime.toISOString(),
+         emergency_message: `Emergency booking open for ${minutes} minutes. Book now!`
+       }))
+
+       toast.success(`Booking opened for ${minutes} minutes!`)
+     } catch (error) {
+       console.error('Error opening quick booking:', error)
+       toast.error('Failed to open booking')
+     }
+   }
+
+   const handleManualOpen = async () => {
+     try {
+       const now = new Date()
+       
+                const { error } = await supabase
+           .from('booking_system_settings')
+           .upsert({
+             ...settings,
+             is_emergency_booking_open: true,
+             emergency_booking_start: now.toISOString(),
+             emergency_booking_end: undefined, // No auto-close
+             emergency_message: 'Manual booking is now open. Book your lab sessions!',
+             updated_by: user?.id,
+             updated_at: now.toISOString()
+           })
+
+       if (error) throw error
+
+       // Update local state
+       setSettings(prev => ({
+         ...prev,
+         is_emergency_booking_open: true,
+         emergency_booking_start: now.toISOString(),
+         emergency_booking_end: undefined,
+         emergency_message: 'Manual booking is now open. Book your lab sessions!'
+       }))
+
+       toast.success('Manual booking opened!')
+     } catch (error) {
+       console.error('Error opening manual booking:', error)
+       toast.error('Failed to open booking')
+     }
+   }
+
+   const handleManualClose = async () => {
+     try {
+       const now = new Date()
+       
+                const { error } = await supabase
+           .from('booking_system_settings')
+           .upsert({
+             ...settings,
+             is_emergency_booking_open: false,
+             emergency_booking_start: undefined,
+             emergency_booking_end: undefined,
+             emergency_message: 'Emergency booking is currently closed.',
+             updated_by: user?.id,
+             updated_at: now.toISOString()
+           })
+
+       if (error) throw error
+
+       // Update local state
+       setSettings(prev => ({
+         ...prev,
+         is_emergency_booking_open: false,
+         emergency_booking_start: undefined,
+         emergency_booking_end: undefined,
+         emergency_message: 'Emergency booking is currently closed.'
+       }))
+
+       toast.success('Booking closed!')
+     } catch (error) {
+       console.error('Error closing booking:', error)
+       toast.error('Failed to close booking')
+     }
+   }
 
 
 
@@ -267,21 +370,83 @@ export default function BookingSettings() {
              </div>
            </div>
 
-                       {/* Manual Booking Control */}
-            <div className="mt-6 p-4 bg-slate-50 rounded-xl">
-              <h4 className="font-semibold text-slate-800 mb-3">Manual Booking Control</h4>
-              <p className="text-sm text-slate-600 mb-4">Quick on-the-spot control for immediate booking access</p>
-              <div className="flex flex-wrap gap-3">
-                <button className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center space-x-2">
-                  <CheckCircle className="w-4 h-4" />
-                  <span>Open Booking Now</span>
-                </button>
-                <button className="px-6 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center space-x-2">
-                  <XCircle className="w-4 h-4" />
-                  <span>Close Booking Now</span>
-                </button>
-              </div>
-            </div>
+                                               {/* Manual Booking Control */}
+             <div className="mt-6 p-4 bg-slate-50 rounded-xl">
+               <h4 className="font-semibold text-slate-800 mb-3">Manual Booking Control</h4>
+               <p className="text-sm text-slate-600 mb-4">Quick on-the-spot control for immediate booking access</p>
+               
+               {/* Quick Time Slots */}
+               <div className="mb-4">
+                 <h5 className="font-medium text-slate-700 mb-3">Quick Time Slots</h5>
+                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                   <button 
+                     onClick={() => handleQuickOpen(10)}
+                     className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                   >
+                     10 Minutes
+                   </button>
+                   <button 
+                     onClick={() => handleQuickOpen(20)}
+                     className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                   >
+                     20 Minutes
+                   </button>
+                   <button 
+                     onClick={() => handleQuickOpen(60)}
+                     className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                   >
+                     1 Hour
+                   </button>
+                   <button 
+                     onClick={() => handleQuickOpen(120)}
+                     className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                   >
+                     2 Hours
+                   </button>
+                 </div>
+               </div>
+
+               {/* Manual Control */}
+               <div className="flex flex-wrap gap-3">
+                 <button 
+                   onClick={handleManualOpen}
+                   className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center space-x-2"
+                 >
+                   <CheckCircle className="w-4 h-4" />
+                   <span>Open Booking Now</span>
+                 </button>
+                 <button 
+                   onClick={handleManualClose}
+                   className="px-6 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center space-x-2"
+                 >
+                   <XCircle className="w-4 h-4" />
+                   <span>Close Booking Now</span>
+                 </button>
+               </div>
+
+               {/* Current Manual Booking Status */}
+               {settings.is_emergency_booking_open && (
+                 <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                   <div className="flex items-center justify-between">
+                     <div className="flex items-center space-x-2">
+                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                       <span className="text-sm font-medium text-green-800">Manual booking is currently OPEN</span>
+                     </div>
+                     <button 
+                       onClick={handleManualClose}
+                       className="text-sm text-red-600 hover:text-red-800 font-medium"
+                     >
+                       End Now
+                     </button>
+                   </div>
+                   {settings.emergency_booking_end && (
+                     <p className="text-xs text-green-600 mt-1">
+                       Auto-closes at: {new Date(settings.emergency_booking_end).toLocaleTimeString()}
+                     </p>
+                   )}
+                 </div>
+               )}
+             </div>
          </div>
 
        </div>
