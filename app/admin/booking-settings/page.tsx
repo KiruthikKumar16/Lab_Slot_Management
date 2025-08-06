@@ -232,38 +232,33 @@ export default function BookingSettings() {
         {/* Mode Toggle Switch */}
         <div className="glass-card p-6 mb-6">
           <div className="flex items-center justify-center">
-            <div className="relative bg-slate-200 rounded-full p-1 w-80">
+            <div className="relative bg-slate-100 rounded-2xl p-1 w-96">
               <button
                 onClick={() => setActiveMode('regular')}
-                className={`relative z-10 px-8 py-3 rounded-full font-semibold transition-all duration-300 ${
+                className={`relative z-10 w-1/2 px-6 py-4 rounded-xl font-semibold transition-all duration-300 ${
                   activeMode === 'regular'
-                    ? 'text-blue-600 bg-white shadow-lg'
+                    ? 'text-white bg-blue-600 shadow-lg'
                     : 'text-slate-600 hover:text-slate-800'
                 }`}
               >
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center justify-center space-x-2">
                   <Shield className="w-5 h-5" />
                   <span>Regular Booking</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveMode('emergency')}
-                className={`relative z-10 px-8 py-3 rounded-full font-semibold transition-all duration-300 ${
+                className={`relative z-10 w-1/2 px-6 py-4 rounded-xl font-semibold transition-all duration-300 ${
                   activeMode === 'emergency'
-                    ? 'text-orange-600 bg-white shadow-lg'
+                    ? 'text-white bg-orange-600 shadow-lg'
                     : 'text-slate-600 hover:text-slate-800'
                 }`}
               >
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center justify-center space-x-2">
                   <Zap className="w-5 h-5" />
                   <span>Emergency Booking</span>
                 </div>
               </button>
-              <div
-                className={`absolute top-1 bottom-1 w-1/2 bg-white rounded-full shadow-lg transition-all duration-300 ${
-                  activeMode === 'emergency' ? 'translate-x-full' : 'translate-x-0'
-                }`}
-              />
             </div>
           </div>
         </div>
