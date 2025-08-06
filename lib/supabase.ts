@@ -45,4 +45,15 @@ export interface Booking {
   // Joined data
   lab_slot?: LabSlot
   user?: User
+}
+
+export interface BookingSystemSettings {
+  id: number
+  is_booking_open: boolean
+  booking_start_date: string
+  booking_end_date: string
+  allowed_days: string[]
+  message: string
+  updated_by?: number
+  updated_at: string
 } 

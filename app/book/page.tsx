@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { Calendar, Clock, Users, MapPin, AlertTriangle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { LabSlot } from '@/lib/supabase'
+import { LabSlot, BookingSystemSettings } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import Navigation from '@/components/Navigation'
 
@@ -16,8 +16,7 @@ export default function BookPage() {
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState('')
   const [bookingLoading, setBookingLoading] = useState<string | null>(null)
-
-  const isSunday = new Date().getDay() === 0
+  const [bookingSettings, setBookingSettings] = useState<BookingSystemSettings | null>(null)
 
   useEffect(() => {
     if (!user) {
@@ -25,8 +24,29 @@ export default function BookPage() {
       return
     }
 
+    fetchBookingSettings()
     fetchSlots()
   }, [user, router])
+
+  const fetchBookingSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('booking_system_settings')
+        .select('*')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (error) {
+        console.error('Error fetching booking settings:', error)
+        return
+      }
+
+      setBookingSettings(data)
+    } catch (error) {
+      console.error('Error fetching booking settings:', error)
+    }
+  }
 
   const fetchSlots = async () => {
     try {
@@ -61,8 +81,33 @@ export default function BookPage() {
     }
   }
 
+  const isBookingAllowed = () => {
+    if (!bookingSettings) return false
+    
+    // Check if booking is open
+    if (!bookingSettings.is_booking_open) return false
+    
+    // Check if current date is within booking period
+    const today = new Date()
+    const startDate = new Date(bookingSettings.booking_start_date)
+    const endDate = new Date(bookingSettings.booking_end_date)
+    
+    if (today < startDate || today > endDate) return false
+    
+    // Check if current day is allowed
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+    const currentDay = dayNames[today.getDay()]
+    
+    return bookingSettings.allowed_days.includes(currentDay)
+  }
+
   const handleBookSlot = async (slotId: string) => {
     if (!user) return
+
+    if (!isBookingAllowed()) {
+      toast.error('Booking is not currently allowed')
+      return
+    }
 
     try {
       setBookingLoading(slotId)
@@ -157,14 +202,16 @@ export default function BookPage() {
           <p className="text-slate-600 text-lg">Select an available time slot for your lab session</p>
         </div>
 
-        {/* Sunday Warning */}
-        {!isSunday && (
+        {/* Booking Status Warning */}
+        {!isBookingAllowed() && (
           <div className="glass-card p-6 mb-8">
             <div className="flex items-center space-x-3">
               <AlertTriangle className="w-6 h-6 text-orange-600" />
               <div>
                 <h3 className="font-semibold text-orange-800">Booking Closed</h3>
-                <p className="text-orange-700">Bookings are only allowed on Sundays. Please check back on Sunday to book your lab session.</p>
+                <p className="text-orange-700">
+                  {bookingSettings?.message || 'Booking is currently not available. Please check back later or contact the administrator.'}
+                </p>
               </div>
             </div>
           </div>
@@ -244,9 +291,9 @@ export default function BookPage() {
 
                   <button
                     onClick={() => handleBookSlot(slot.id)}
-                    disabled={!isAvailable || !isSunday || isBooked}
+                    disabled={!isAvailable || !isBookingAllowed() || isBooked}
                     className={`w-full py-3 rounded-xl font-semibold transition-all duration-300 ${
-                      isAvailable && isSunday
+                      isAvailable && isBookingAllowed()
                         ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white hover:from-blue-700 hover:to-indigo-800'
                         : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                     }`}

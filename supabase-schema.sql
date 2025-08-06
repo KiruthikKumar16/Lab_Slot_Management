@@ -25,6 +25,18 @@ CREATE TABLE public.users (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Booking system settings (for admin to control booking availability)
+CREATE TABLE public.booking_system_settings (
+  id SERIAL PRIMARY KEY,
+  is_booking_open BOOLEAN DEFAULT false,
+  booking_start_date DATE,
+  booking_end_date DATE,
+  allowed_days TEXT[], -- ['sunday', 'monday', etc.]
+  message TEXT, -- Custom message when booking is closed
+  updated_by INTEGER REFERENCES public.users(id),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Lab slots table (for managing available lab sessions)
 CREATE TABLE public.lab_slots (
   id SERIAL PRIMARY KEY,
@@ -53,6 +65,7 @@ CREATE TABLE public.bookings (
 -- =============================================================================
 
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.booking_system_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lab_slots ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
 
@@ -69,6 +82,13 @@ CREATE POLICY "Users can update own profile" ON public.users
 
 CREATE POLICY "Users can insert own profile" ON public.users
   FOR INSERT WITH CHECK (true);
+
+-- Booking system settings policies
+CREATE POLICY "Anyone can view booking settings" ON public.booking_system_settings
+  FOR SELECT USING (true);
+
+CREATE POLICY "Admins can manage booking settings" ON public.booking_system_settings
+  FOR ALL USING (true);
 
 -- Lab slots table policies
 CREATE POLICY "Anyone can view lab slots" ON public.lab_slots
@@ -117,6 +137,11 @@ INSERT INTO public.users (email, name, role) VALUES
 ('kiruthikkumar.m2022@vitstudent.ac.in', 'Kiruthik Kumar', 'student'),
 ('admin@lab.com', 'Lab Administrator', 'admin')
 ON CONFLICT (email) DO NOTHING;
+
+-- Insert default booking system settings
+INSERT INTO public.booking_system_settings (is_booking_open, booking_start_date, booking_end_date, allowed_days, message) VALUES
+(true, CURRENT_DATE, CURRENT_DATE + INTERVAL '30 days', ARRAY['sunday'], 'Booking is currently open for Sundays only. Contact admin for special requests.')
+ON CONFLICT (id) DO NOTHING;
 
 -- Insert sample lab slots for the next few days
 INSERT INTO public.lab_slots (date, start_time, end_time, status, remarks) VALUES
