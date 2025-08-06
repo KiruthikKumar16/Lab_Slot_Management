@@ -151,9 +151,9 @@ export default function BookingSettings() {
         </div>
 
         {/* Regular Booking Settings */}
-        <div className="glass-card p-6 mb-6">
-          <h2 className="text-xl font-semibold text-slate-800 mb-4">Regular Booking (Sunday Schedule)</h2>
-          <div className="space-y-6">
+        <div className="glass-card p-8 mb-8">
+          <h2 className="text-xl font-semibold text-slate-800 mb-6">Regular Booking (Sunday Schedule)</h2>
+          <div className="space-y-8">
             {/* Regular Booking Status */}
             <div>
               <label className="flex items-center space-x-3">
@@ -203,9 +203,9 @@ export default function BookingSettings() {
         </div>
 
         {/* Emergency Booking Settings */}
-        <div className="glass-card p-6">
-          <h2 className="text-xl font-semibold text-slate-800 mb-4">Emergency Booking (Admin Override)</h2>
-          <div className="space-y-6">
+        <div className="glass-card p-8 mb-8">
+          <h2 className="text-xl font-semibold text-slate-800 mb-6">Emergency Booking (Admin Override)</h2>
+          <div className="space-y-8">
             {/* Emergency Booking Status */}
             <div>
               <label className="flex items-center space-x-3">
@@ -277,8 +277,8 @@ export default function BookingSettings() {
         </div>
 
         {/* Quick Actions */}
-        <div className="glass-card p-6">
-          <h3 className="text-lg font-semibold text-slate-800 mb-4">Quick Actions</h3>
+        <div className="glass-card p-8 mb-8">
+          <h3 className="text-lg font-semibold text-slate-800 mb-6">Quick Actions</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button
               onClick={() => setSettings(prev => ({
@@ -307,7 +307,7 @@ export default function BookingSettings() {
         </div>
 
         {/* Save Button */}
-        <div className="glass-card p-6">
+        <div className="glass-card p-8 mb-8">
           <div className="flex justify-end">
             <button
               onClick={handleSave}
@@ -330,8 +330,8 @@ export default function BookingSettings() {
         </div>
 
         {/* Current Status */}
-        <div className="mt-6 glass-card p-6">
-          <h3 className="text-lg font-semibold text-slate-800 mb-4">Current Status</h3>
+        <div className="glass-card p-8">
+          <h3 className="text-lg font-semibold text-slate-800 mb-6">Current Status</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center space-x-3">
               <div className={`w-3 h-3 rounded-full ${settings.is_regular_booking_enabled ? 'bg-blue-500' : 'bg-gray-500'}`} />

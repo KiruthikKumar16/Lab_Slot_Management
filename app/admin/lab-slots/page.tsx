@@ -10,7 +10,8 @@ import toast from 'react-hot-toast'
 import Navigation from '@/components/Navigation'
 
 interface SlotWithUser extends LabSlot {
-  user?: {
+  users?: {
+    id: number
     email: string
   }
 }
@@ -51,21 +52,30 @@ export default function AdminLabSlots() {
     try {
       setLoading(true)
       
+      console.log('Fetching slots for date:', selectedDate)
+      
       const { data, error } = await supabase
         .from('lab_slots')
         .select(`
           *,
-          user (*)
+          users!lab_slots_booked_by_fkey (
+            id,
+            email
+          )
         `)
         .eq('date', selectedDate)
         .order('start_time', { ascending: true })
 
-      if (error) throw error
+      if (error) {
+        console.error('Database error:', error)
+        throw error
+      }
 
+      console.log('Fetched slots:', data)
       setSlots(data || [])
     } catch (error) {
       console.error('Error fetching slots:', error)
-      toast.error('Failed to load lab slots')
+      toast.error(`Failed to load lab slots: ${error.message}`)
     } finally {
       setLoading(false)
     }
@@ -349,9 +359,9 @@ export default function AdminLabSlots() {
                           {getStatusText(slot.status)}
                         </span>
                       </div>
-                      {slot.status === 'booked' && slot.user && (
+                      {slot.status === 'booked' && slot.users && (
                         <div className="text-sm text-slate-600">
-                          Booked by: {slot.user.email}
+                          Booked by: {slot.users.email}
                         </div>
                       )}
                       {slot.remarks && (
@@ -464,10 +474,10 @@ export default function AdminLabSlots() {
                     {getStatusText(selectedSlot.status)}
                   </span>
                 </div>
-                {selectedSlot.status === 'booked' && selectedSlot.user && (
+                {selectedSlot.status === 'booked' && selectedSlot.users && (
                   <div>
                     <span className="text-sm font-medium text-slate-600">Booked by:</span>
-                    <p className="text-slate-800">{selectedSlot.user.email}</p>
+                    <p className="text-slate-800">{selectedSlot.users.email}</p>
                   </div>
                 )}
                 {selectedSlot.remarks && (
