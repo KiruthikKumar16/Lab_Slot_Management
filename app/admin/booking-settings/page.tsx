@@ -158,166 +158,129 @@ export default function BookingSettings() {
           </div>
         </div>
 
-                 {/* Compact Status Overview */}
-         <div className="glass-card p-4 mb-6">
-           <div className="flex items-center justify-between">
-             <div className="flex items-center space-x-6">
-               <div className="flex items-center space-x-2">
-                 <div className={`w-3 h-3 rounded-full ${settings.is_regular_booking_enabled ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                 <span className="text-sm font-medium text-slate-700">Scheduled: {settings.is_regular_booking_enabled ? 'ON' : 'OFF'}</span>
-               </div>
-               <div className="flex items-center space-x-2">
-                 <div className={`w-3 h-3 rounded-full ${settings.is_emergency_booking_open ? 'bg-orange-500' : 'bg-gray-400'}`}></div>
-                 <span className="text-sm font-medium text-slate-700">Manual: {settings.is_emergency_booking_open ? 'ACTIVE' : 'INACTIVE'}</span>
-               </div>
+                          {/* Booking Slots Management */}
+         <div className="glass-card p-6">
+           <div className="flex items-center justify-between mb-6">
+             <div className="flex items-center space-x-3">
+               <Calendar className="w-6 h-6 text-blue-600" />
+               <h2 className="text-xl font-semibold text-slate-800">Booking Time Slots</h2>
              </div>
              <div className="text-sm text-slate-500">
-               {settings.regular_allowed_days.length} scheduled days • {settings.emergency_allowed_days?.length || 0} overrides
+               Manage when students can book lab sessions
              </div>
            </div>
-         </div>
 
-                                   {/* Compact Booking Settings Form */}
-         <div className="glass-card p-6">
-           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-             {/* Scheduled Booking */}
-             <div>
-               <div className="flex items-center space-x-2 mb-4">
-                 <Calendar className="w-5 h-5 text-blue-600" />
-                 <h3 className="text-lg font-semibold text-slate-800">Scheduled Booking</h3>
-               </div>
-               
-               {/* Enable Toggle */}
-               <div className="flex items-center space-x-3 mb-4">
-                 <input
-                   type="checkbox"
-                   checked={settings.is_regular_booking_enabled}
-                   onChange={(e) => setSettings(prev => ({ ...prev, is_regular_booking_enabled: e.target.checked }))}
-                   className="w-4 h-4 text-blue-600 bg-white border-slate-300 rounded focus:ring-blue-500"
-                 />
-                 <span className="text-sm font-medium text-slate-700">Enable recurring weekly booking</span>
-               </div>
-
-               {/* Time Range */}
-               <div className="flex items-center space-x-3 mb-4">
-                 <span className="text-sm text-slate-600">Time:</span>
-                 <input
-                   type="time"
-                   value={settings.regular_booking_start_time || '09:00'}
-                   onChange={(e) => setSettings(prev => ({ ...prev, regular_booking_start_time: e.target.value }))}
-                   className="px-2 py-1 border border-slate-300 rounded text-sm bg-white text-slate-800"
-                 />
-                 <span className="text-sm text-slate-500">to</span>
-                 <input
-                   type="time"
-                   value={settings.regular_booking_end_time || '11:00'}
-                   onChange={(e) => setSettings(prev => ({ ...prev, regular_booking_end_time: e.target.value }))}
-                   className="px-2 py-1 border border-slate-300 rounded text-sm bg-white text-slate-800"
-                 />
-               </div>
-
-               {/* Days Selection */}
-               <div className="mb-4">
-                 <span className="text-sm text-slate-600 block mb-2">Days:</span>
-                 <div className="grid grid-cols-2 gap-2">
-                   {daysOfWeek.map(day => (
-                     <label key={day.value} className="flex items-center space-x-2 text-sm">
-                       <input
-                         type="checkbox"
-                         checked={settings.regular_allowed_days.includes(day.value)}
-                         onChange={() => handleRegularDayToggle(day.value)}
-                         className="w-3 h-3 text-blue-600 bg-white border-slate-300 rounded focus:ring-blue-500"
-                       />
-                       <span className="text-slate-700">{day.label}</span>
-                     </label>
-                   ))}
-                 </div>
-               </div>
-             </div>
-
-             {/* Manual Overrides */}
-             <div>
-               <div className="flex items-center space-x-2 mb-4">
-                 <Zap className="w-5 h-5 text-orange-600" />
-                 <h3 className="text-lg font-semibold text-slate-800">Manual Overrides</h3>
-               </div>
-               
-               {/* Add Override Form */}
-               <div className="space-y-3 mb-4">
-                 <div className="flex items-center space-x-2">
-                   <input
-                     type="date"
-                     className="px-2 py-1 border border-slate-300 rounded text-sm bg-white text-slate-800"
-                     placeholder="Date"
-                   />
-                   <input
-                     type="time"
-                     className="px-2 py-1 border border-slate-300 rounded text-sm bg-white text-slate-800"
-                   />
-                   <span className="text-sm text-slate-500">to</span>
-                   <input
-                     type="time"
-                     className="px-2 py-1 border border-slate-300 rounded text-sm bg-white text-slate-800"
-                   />
-                   <select className="px-2 py-1 border border-slate-300 rounded text-sm bg-white text-slate-800">
-                     <option value="open">Open</option>
-                     <option value="closed">Closed</option>
-                   </select>
-                   <button className="px-3 py-1 bg-orange-600 text-white rounded text-sm hover:bg-orange-700">
-                     Add
-                   </button>
-                 </div>
-               </div>
-
-               {/* Existing Overrides */}
+           {/* Add New Booking Slot */}
+           <div className="bg-blue-50 rounded-xl p-4 mb-6">
+             <h3 className="font-semibold text-slate-800 mb-4">➕ Add New Booking Slot</h3>
+             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                <div>
-                 <span className="text-sm text-slate-600 block mb-2">Current Overrides:</span>
-                 <div className="space-y-1">
-                   <div className="flex items-center justify-between text-sm p-2 bg-slate-50 rounded">
-                     <span>Aug 6, 2025 • 15:00-17:00</span>
-                     <div className="flex items-center space-x-2">
-                       <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Open</span>
-                       <button className="text-red-600 hover:text-red-800">×</button>
-                     </div>
-                   </div>
-                   <div className="flex items-center justify-between text-sm p-2 bg-slate-50 rounded">
-                     <span>Aug 7, 2025 • 09:00-10:00</span>
-                     <div className="flex items-center space-x-2">
-                       <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs">Closed</span>
-                       <button className="text-red-600 hover:text-red-800">×</button>
-                     </div>
-                   </div>
-                 </div>
+                 <label className="block text-sm font-medium text-slate-700 mb-2">Date</label>
+                 <input
+                   type="date"
+                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-slate-800"
+                 />
+               </div>
+               <div>
+                 <label className="block text-sm font-medium text-slate-700 mb-2">Start Time</label>
+                 <input
+                   type="time"
+                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-slate-800"
+                 />
+               </div>
+               <div>
+                 <label className="block text-sm font-medium text-slate-700 mb-2">End Time</label>
+                 <input
+                   type="time"
+                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-slate-800"
+                 />
+               </div>
+               <div>
+                 <button className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-4 py-2 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-800 transition-all duration-300">
+                   Add Slot
+                 </button>
                </div>
              </div>
            </div>
 
-           {/* Save Button */}
-           <div className="flex justify-center mt-6 pt-6 border-t border-slate-200">
-             <button
-               onClick={handleSave}
-               disabled={saving}
-               className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-800 transition-all duration-300 flex items-center space-x-2 disabled:opacity-50"
-             >
-               {saving ? (
-                 <>
-                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                   <span>Saving...</span>
-                 </>
-               ) : (
-                 <>
-                   <Save className="w-4 h-4" />
-                   <span>Save Settings</span>
-                 </>
-               )}
-             </button>
+           {/* Current Booking Slots */}
+           <div>
+             <h3 className="font-semibold text-slate-800 mb-4">📋 Current Booking Slots</h3>
+             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+               <table className="w-full">
+                 <thead className="bg-slate-50">
+                   <tr>
+                     <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Date</th>
+                     <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Time</th>
+                     <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Status</th>
+                     <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Actions</th>
+                   </tr>
+                 </thead>
+                 <tbody className="divide-y divide-slate-200">
+                   <tr className="hover:bg-slate-50">
+                     <td className="px-4 py-3 text-sm text-slate-700">Sunday, Aug 10</td>
+                     <td className="px-4 py-3 text-sm text-slate-700">09:00 – 11:00</td>
+                     <td className="px-4 py-3">
+                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                         Open
+                       </span>
+                     </td>
+                     <td className="px-4 py-3">
+                       <div className="flex items-center space-x-2">
+                         <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">Edit</button>
+                         <button className="text-red-600 hover:text-red-800 text-sm font-medium">Delete</button>
+                       </div>
+                     </td>
+                   </tr>
+                   <tr className="hover:bg-slate-50">
+                     <td className="px-4 py-3 text-sm text-slate-700">Monday, Aug 11</td>
+                     <td className="px-4 py-3 text-sm text-slate-700">14:00 – 16:00</td>
+                     <td className="px-4 py-3">
+                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                         Limited
+                       </span>
+                     </td>
+                     <td className="px-4 py-3">
+                       <div className="flex items-center space-x-2">
+                         <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">Edit</button>
+                         <button className="text-red-600 hover:text-red-800 text-sm font-medium">Delete</button>
+                       </div>
+                     </td>
+                   </tr>
+                   <tr className="hover:bg-slate-50">
+                     <td className="px-4 py-3 text-sm text-slate-700">Wednesday, Aug 13</td>
+                     <td className="px-4 py-3 text-sm text-slate-700">10:00 – 12:00</td>
+                     <td className="px-4 py-3">
+                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                         Closed
+                       </span>
+                     </td>
+                     <td className="px-4 py-3">
+                       <div className="flex items-center space-x-2">
+                         <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">Edit</button>
+                         <button className="text-red-600 hover:text-red-800 text-sm font-medium">Delete</button>
+                       </div>
+                     </td>
+                   </tr>
+                 </tbody>
+               </table>
+             </div>
            </div>
 
-           {/* Quick Info */}
-           <div className="mt-4 p-3 bg-slate-50 rounded-lg">
-             <p className="text-xs text-slate-600 text-center">
-               <strong>Booking Logic:</strong> Scheduled times OR manual opens, BUT manual closes block everything
-             </p>
+           {/* Quick Actions */}
+           <div className="mt-6 p-4 bg-slate-50 rounded-xl">
+             <h4 className="font-semibold text-slate-800 mb-3">Quick Actions</h4>
+             <div className="flex flex-wrap gap-3">
+               <button className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
+                 Open All Week
+               </button>
+               <button className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">
+                 Close All Week
+               </button>
+               <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                 Copy Last Week
+               </button>
+             </div>
            </div>
          </div>
 
