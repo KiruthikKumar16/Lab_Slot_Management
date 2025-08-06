@@ -24,6 +24,13 @@ export default function AdminLabSlots() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [selectedSlot, setSelectedSlot] = useState<SlotWithUser | null>(null)
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [editSlot, setEditSlot] = useState({
+    start_time: '',
+    end_time: '',
+    status: 'available',
+    remarks: ''
+  })
   const [newSlot, setNewSlot] = useState({
     date: '',
     start_time: '',
@@ -135,6 +142,13 @@ export default function AdminLabSlots() {
       if (error) throw error
 
       toast.success('Lab slot deleted successfully')
+      
+      // Close modal if deleting from modal
+      if (selectedSlot && Number(selectedSlot.id) === slotId) {
+        setSelectedSlot(null)
+        setIsEditMode(false)
+      }
+      
       fetchSlots()
     } catch (error) {
       console.error('Error deleting slot:', error)
@@ -181,6 +195,65 @@ export default function AdminLabSlots() {
       console.error('Error reopening slot:', error)
       toast.error('Failed to reopen slot')
     }
+  }
+
+  const handleEditSlot = (slot: SlotWithUser) => {
+    setSelectedSlot(slot)
+    setEditSlot({
+      start_time: slot.start_time,
+      end_time: slot.end_time,
+      status: slot.status,
+      remarks: slot.remarks || ''
+    })
+    setIsEditMode(true)
+  }
+
+  const handleUpdateSlot = async () => {
+    if (!selectedSlot) return
+
+    // Validate required fields
+    if (!editSlot.start_time || !editSlot.end_time) {
+      toast.error('Please fill in both start time and end time')
+      return
+    }
+
+    // Validate that end time is after start time
+    if (editSlot.start_time >= editSlot.end_time) {
+      toast.error('End time must be after start time')
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('lab_slots')
+        .update({
+          start_time: editSlot.start_time,
+          end_time: editSlot.end_time,
+          status: editSlot.status,
+          remarks: editSlot.remarks
+        })
+        .eq('id', selectedSlot.id)
+
+      if (error) throw error
+
+      toast.success('Slot updated successfully')
+      setSelectedSlot(null)
+      setIsEditMode(false)
+      fetchSlots()
+    } catch (error) {
+      console.error('Error updating slot:', error)
+      toast.error('Failed to update slot')
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setIsEditMode(false)
+    setEditSlot({
+      start_time: '',
+      end_time: '',
+      status: 'available',
+      remarks: ''
+    })
   }
 
   const navigateDate = (direction: 'prev' | 'next') => {
@@ -376,7 +449,7 @@ export default function AdminLabSlots() {
                     {slot.status === 'available' && (
                       <>
                         <button
-                          onClick={() => setSelectedSlot(slot)}
+                          onClick={() => handleEditSlot(slot)}
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                           title="Edit slot"
                         >
@@ -395,11 +468,11 @@ export default function AdminLabSlots() {
                     {slot.status === 'booked' && (
                       <>
                         <button
-                          onClick={() => setSelectedSlot(slot)}
+                          onClick={() => handleEditSlot(slot)}
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="View booking details"
+                          title="Edit slot"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleCancelBooking(Number(slot.id))}
@@ -413,6 +486,13 @@ export default function AdminLabSlots() {
                     
                     {slot.status === 'closed' && (
                       <>
+                        <button
+                          onClick={() => handleEditSlot(slot)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Edit slot"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => handleReopenSlot(Number(slot.id))}
                           className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
@@ -450,49 +530,92 @@ export default function AdminLabSlots() {
           )}
         </div>
 
-        {/* Slot Details Modal */}
-        {selectedSlot && (
+        {/* Edit Slot Modal */}
+        {selectedSlot && isEditMode && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="glass-card p-6 max-w-md w-full mx-4">
-              <h3 className="text-xl font-semibold text-slate-800 mb-4">Slot Details</h3>
-              <div className="space-y-3">
+              <h3 className="text-xl font-semibold text-slate-800 mb-4">Edit Slot</h3>
+              
+              <div className="space-y-4">
                 <div>
                   <span className="text-sm font-medium text-slate-600">Date:</span>
                   <p className="text-slate-800">{new Date(selectedSlot.date).toLocaleDateString()}</p>
                 </div>
-                <div>
-                  <span className="text-sm font-medium text-slate-600">Time:</span>
-                  <p className="text-slate-800">{selectedSlot.start_time} - {selectedSlot.end_time}</p>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Start Time</label>
+                    <input
+                      type="time"
+                      value={editSlot.start_time}
+                      onChange={(e) => setEditSlot({ ...editSlot, start_time: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">End Time</label>
+                    <input
+                      type="time"
+                      value={editSlot.end_time}
+                      onChange={(e) => setEditSlot({ ...editSlot, end_time: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-800"
+                    />
+                  </div>
                 </div>
+
                 <div>
-                  <span className="text-sm font-medium text-slate-600">Status:</span>
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    selectedSlot.status === 'booked' ? 'bg-red-100 text-red-800' :
-                    selectedSlot.status === 'closed' ? 'bg-gray-100 text-gray-800' :
-                    'bg-green-100 text-green-800'
-                  }`}>
-                    {getStatusText(selectedSlot.status)}
-                  </span>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Status</label>
+                  <select
+                    value={editSlot.status}
+                    onChange={(e) => setEditSlot({ ...editSlot, status: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-800"
+                  >
+                    <option value="available">Available</option>
+                    <option value="closed">Closed</option>
+                    {selectedSlot.status === 'booked' && <option value="booked">Booked</option>}
+                  </select>
                 </div>
+
                 {selectedSlot.status === 'booked' && selectedSlot.users && (
                   <div>
                     <span className="text-sm font-medium text-slate-600">Booked by:</span>
-                    <p className="text-slate-800">{selectedSlot.users.email}</p>
+                    <p className="text-slate-800 text-sm bg-blue-50 p-2 rounded">{selectedSlot.users.email}</p>
                   </div>
                 )}
-                {selectedSlot.remarks && (
-                  <div>
-                    <span className="text-sm font-medium text-slate-600">Remarks:</span>
-                    <p className="text-slate-800">{selectedSlot.remarks}</p>
-                  </div>
-                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Remarks</label>
+                  <textarea
+                    value={editSlot.remarks}
+                    onChange={(e) => setEditSlot({ ...editSlot, remarks: e.target.value })}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-800"
+                    placeholder="Any additional notes..."
+                  />
+                </div>
               </div>
+
               <div className="flex space-x-3 mt-6">
                 <button
-                  onClick={() => setSelectedSlot(null)}
+                  onClick={handleUpdateSlot}
+                  className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-indigo-800 transition-colors flex-1"
+                >
+                  Update Slot
+                </button>
+                <button
+                  onClick={() => handleDeleteSlot(Number(selectedSlot.id))}
+                  className="bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-2 rounded-lg hover:from-red-700 hover:to-red-800 transition-colors"
+                >
+                  Delete
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedSlot(null)
+                    handleCancelEdit()
+                  }}
                   className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
                 >
-                  Close
+                  Cancel
                 </button>
               </div>
             </div>
