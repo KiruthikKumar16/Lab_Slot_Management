@@ -17,6 +17,7 @@ export default function BookingSettings() {
    const [customDuration, setCustomDuration] = useState('')
    const [selectedDuration, setSelectedDuration] = useState<number | null>(null)
    const [bookingSlots, setBookingSlots] = useState<any[]>([])
+   const [overrideHistory, setOverrideHistory] = useState<any[]>([])
    const [newSlot, setNewSlot] = useState({
      date: '',
      startTime: '',
@@ -66,6 +67,7 @@ export default function BookingSettings() {
 
               fetchSettings()
      fetchBookingSlots()
+     fetchOverrideHistory()
    }, [user, isAdmin, router])
 
    const fetchBookingSlots = async () => {
@@ -87,6 +89,32 @@ export default function BookingSettings() {
      } catch (error) {
        console.error('Error fetching booking slots:', error)
        toast.error('Failed to load booking slots')
+     }
+   }
+
+   const fetchOverrideHistory = async () => {
+     try {
+       const { data, error } = await supabase
+         .from('booking_system_settings')
+         .select('*')
+         .order('updated_at', { ascending: false })
+         .limit(5)
+
+       if (error) throw error
+
+       if (data && data.length > 0) {
+         const history = data.map(record => ({
+           id: record.id,
+           action: record.is_emergency_booking_open ? 'opened' : 'closed',
+           timestamp: record.updated_at,
+           startTime: record.emergency_booking_start,
+           endTime: record.emergency_booking_end,
+           message: record.emergency_message
+         }))
+         setOverrideHistory(history)
+       }
+     } catch (error) {
+       console.error('Error fetching override history:', error)
      }
    }
 
@@ -200,6 +228,7 @@ export default function BookingSettings() {
         }))
 
         toast.success(`Booking opened for ${minutes} minutes!`)
+        fetchOverrideHistory() // Refresh history
       } catch (error) {
         console.error('Error opening quick booking:', error)
         toast.error('Failed to open booking')
@@ -252,6 +281,7 @@ export default function BookingSettings() {
         }))
 
         toast.success('Manual booking opened!')
+        fetchOverrideHistory() // Refresh history
       } catch (error) {
         console.error('Error opening manual booking:', error)
         toast.error('Failed to open booking')
@@ -294,12 +324,13 @@ export default function BookingSettings() {
            emergency_message: 'Emergency booking is currently closed.'
          }))
 
-         toast.success('Booking closed!')
-       } catch (error) {
-         console.error('Error closing booking:', error)
-         toast.error('Failed to close booking')
-       }
-     }
+                   toast.success('Booking closed!')
+          fetchOverrideHistory() // Refresh history
+        } catch (error) {
+          console.error('Error closing booking:', error)
+          toast.error('Failed to close booking')
+        }
+      }
 
                    const handleCustomOpen = async () => {
         const minutes = parseInt(customDuration || '0')
@@ -563,13 +594,6 @@ export default function BookingSettings() {
                                  {/* Quick Time Slots - Improved UI */}
                  <div className="mb-6">
                    <h5 className="font-medium text-slate-700 mb-3">Select Duration:</h5>
-                   {selectedDuration && (
-                     <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                       <span className="text-sm text-blue-700">
-                         ✅ Selected: {selectedDuration} minutes
-                       </span>
-                     </div>
-                   )}
                    <div className="flex flex-wrap gap-2 mb-3">
                                          <button 
                        onClick={() => handleSelectDuration(10)}
@@ -687,24 +711,46 @@ export default function BookingSettings() {
                   </div>
                 )}
 
-                                 {/* Recent Override History */}
+                                                  {/* Recent Override History */}
                  <div className="mt-6 p-3 bg-white border border-slate-200 rounded-lg">
                    <h5 className="font-medium text-slate-800 mb-3">📜 Recent Overrides:</h5>
                    <div className="space-y-2 text-sm">
-                     <div className="flex items-center space-x-2">
-                       <span className="text-green-600">✔️</span>
-                       <span className="text-slate-700">Opened: Aug 5, 3:00 PM → 4:00 PM</span>
-                     </div>
-                     <div className="flex items-center space-x-2">
-                       <span className="text-red-600">❌</span>
-                       <span className="text-slate-700">Closed: Aug 4, 11:15 AM</span>
-                     </div>
-                     <div className="flex items-center space-x-2">
-                       <span className="text-green-600">✔️</span>
-                       <span className="text-slate-700">Opened: Aug 3, 10:00 AM → 10:20 AM</span>
-                     </div>
+                     {overrideHistory.length === 0 ? (
+                       <div className="text-slate-500 text-center py-2">
+                         No recent overrides found
+                       </div>
+                     ) : (
+                       overrideHistory.map((override) => (
+                         <div key={override.id} className="flex items-center space-x-2">
+                           <span className={override.action === 'opened' ? 'text-green-600' : 'text-red-600'}>
+                             {override.action === 'opened' ? '✔️' : '❌'}
+                           </span>
+                           <span className="text-slate-700">
+                             {override.action === 'opened' ? 'Opened' : 'Closed'}: {
+                               new Date(override.timestamp).toLocaleDateString('en-US', {
+                                 month: 'short',
+                                 day: 'numeric'
+                               })
+                             }, {
+                               new Date(override.timestamp).toLocaleTimeString('en-US', {
+                                 hour: 'numeric',
+                                 minute: '2-digit',
+                                 hour12: true
+                               })
+                             }
+                             {override.startTime && override.endTime && (
+                               ` → ${new Date(override.endTime).toLocaleTimeString('en-US', {
+                                 hour: 'numeric',
+                                 minute: '2-digit',
+                                 hour12: true
+                               })}`
+                             )}
+                           </span>
+                         </div>
+                       ))
+                     )}
                    </div>
-                                  </div>
+                 </div>
                </div>
           </div>
 
