@@ -21,6 +21,8 @@ export default function BookingSettings() {
      startTime: '',
      endTime: ''
    })
+   const [editingSlot, setEditingSlot] = useState<any>(null)
+   const [showEditModal, setShowEditModal] = useState(false)
    const [settings, setSettings] = useState<BookingSystemSettings>({
     id: 1,
     is_regular_booking_enabled: true,
@@ -154,108 +156,135 @@ export default function BookingSettings() {
      }))
    }
 
-   const handleQuickOpen = async (minutes: number) => {
-     try {
-       const now = new Date()
-       const endTime = new Date(now.getTime() + minutes * 60 * 1000)
-       
-       const { error } = await supabase
-         .from('booking_system_settings')
-         .upsert({
-           ...settings,
-           is_emergency_booking_open: true,
-           emergency_booking_start: now.toISOString(),
-           emergency_booking_end: endTime.toISOString(),
-           emergency_message: `Emergency booking open for ${minutes} minutes. Book now!`,
-           updated_by: user?.id,
-           updated_at: now.toISOString()
-         })
-
-       if (error) throw error
-
-       // Update local state
-       setSettings(prev => ({
-         ...prev,
-         is_emergency_booking_open: true,
-         emergency_booking_start: now.toISOString(),
-         emergency_booking_end: endTime.toISOString(),
-         emergency_message: `Emergency booking open for ${minutes} minutes. Book now!`
-       }))
-
-       toast.success(`Booking opened for ${minutes} minutes!`)
-     } catch (error) {
-       console.error('Error opening quick booking:', error)
-       toast.error('Failed to open booking')
-     }
-   }
-
-   const handleManualOpen = async () => {
-     try {
-       const now = new Date()
-       
-                const { error } = await supabase
-           .from('booking_system_settings')
-           .upsert({
-             ...settings,
-             is_emergency_booking_open: true,
-             emergency_booking_start: now.toISOString(),
-             emergency_booking_end: undefined, // No auto-close
-             emergency_message: 'Manual booking is now open. Book your lab sessions!',
-             updated_by: user?.id,
-             updated_at: now.toISOString()
-           })
-
-       if (error) throw error
-
-       // Update local state
-       setSettings(prev => ({
-         ...prev,
-         is_emergency_booking_open: true,
-         emergency_booking_start: now.toISOString(),
-         emergency_booking_end: undefined,
-         emergency_message: 'Manual booking is now open. Book your lab sessions!'
-       }))
-
-       toast.success('Manual booking opened!')
-     } catch (error) {
-       console.error('Error opening manual booking:', error)
-       toast.error('Failed to open booking')
-     }
-   }
-
-       const handleManualClose = async () => {
+       const handleQuickOpen = async (minutes: number) => {
       try {
         const now = new Date()
+        const endTime = new Date(now.getTime() + minutes * 60 * 1000)
         
-                 const { error } = await supabase
-            .from('booking_system_settings')
-            .upsert({
-              ...settings,
-              is_emergency_booking_open: false,
-              emergency_booking_start: undefined,
-              emergency_booking_end: undefined,
-              emergency_message: 'Emergency booking is currently closed.',
-              updated_by: user?.id,
-              updated_at: now.toISOString()
-            })
+        // Get current user ID first
+        const { data: currentUser, error: userError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', user?.email)
+          .single()
+
+        if (userError) throw userError
+
+        const { error } = await supabase
+          .from('booking_system_settings')
+          .upsert({
+            ...settings,
+            is_emergency_booking_open: true,
+            emergency_booking_start: now.toISOString(),
+            emergency_booking_end: endTime.toISOString(),
+            emergency_message: `Emergency booking open for ${minutes} minutes. Book now!`,
+            updated_by: currentUser.id,
+            updated_at: now.toISOString()
+          })
 
         if (error) throw error
 
         // Update local state
         setSettings(prev => ({
           ...prev,
-          is_emergency_booking_open: false,
-          emergency_booking_start: undefined,
-          emergency_booking_end: undefined,
-          emergency_message: 'Emergency booking is currently closed.'
+          is_emergency_booking_open: true,
+          emergency_booking_start: now.toISOString(),
+          emergency_booking_end: endTime.toISOString(),
+          emergency_message: `Emergency booking open for ${minutes} minutes. Book now!`
         }))
 
-        toast.success('Booking closed!')
+        toast.success(`Booking opened for ${minutes} minutes!`)
       } catch (error) {
-        console.error('Error closing booking:', error)
-        toast.error('Failed to close booking')
+        console.error('Error opening quick booking:', error)
+        toast.error('Failed to open booking')
       }
     }
+
+       const handleManualOpen = async () => {
+      try {
+        const now = new Date()
+        
+        // Get current user ID first
+        const { data: currentUser, error: userError } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', user?.email)
+          .single()
+
+        if (userError) throw userError
+        
+        const { error } = await supabase
+          .from('booking_system_settings')
+          .upsert({
+            ...settings,
+            is_emergency_booking_open: true,
+            emergency_booking_start: now.toISOString(),
+            emergency_booking_end: undefined, // No auto-close
+            emergency_message: 'Manual booking is now open. Book your lab sessions!',
+            updated_by: currentUser.id,
+            updated_at: now.toISOString()
+          })
+
+        if (error) throw error
+
+        // Update local state
+        setSettings(prev => ({
+          ...prev,
+          is_emergency_booking_open: true,
+          emergency_booking_start: now.toISOString(),
+          emergency_booking_end: undefined,
+          emergency_message: 'Manual booking is now open. Book your lab sessions!'
+        }))
+
+        toast.success('Manual booking opened!')
+      } catch (error) {
+        console.error('Error opening manual booking:', error)
+        toast.error('Failed to open booking')
+      }
+    }
+
+               const handleManualClose = async () => {
+       try {
+         const now = new Date()
+         
+         // Get current user ID first
+         const { data: currentUser, error: userError } = await supabase
+           .from('users')
+           .select('id')
+           .eq('email', user?.email)
+           .single()
+
+         if (userError) throw userError
+         
+         const { error } = await supabase
+           .from('booking_system_settings')
+           .upsert({
+             ...settings,
+             is_emergency_booking_open: false,
+             emergency_booking_start: undefined,
+             emergency_booking_end: undefined,
+             emergency_message: 'Emergency booking is currently closed.',
+             updated_by: currentUser.id,
+             updated_at: now.toISOString()
+           })
+
+         if (error) throw error
+
+         // Update local state
+         setSettings(prev => ({
+           ...prev,
+           is_emergency_booking_open: false,
+           emergency_booking_start: undefined,
+           emergency_booking_end: undefined,
+           emergency_message: 'Emergency booking is currently closed.'
+         }))
+
+         toast.success('Booking closed!')
+       } catch (error) {
+         console.error('Error closing booking:', error)
+         toast.error('Failed to close booking')
+       }
+     }
 
          const handleCustomOpen = async () => {
        const minutes = parseInt(customDuration || '0')
@@ -298,19 +327,40 @@ export default function BookingSettings() {
        }
      }
 
-     const handleEditSlot = (slotId: number) => {
-       const slot = bookingSlots.find(s => s.id === slotId)
-       if (slot) {
-         setNewSlot({
-           date: slot.date,
-           startTime: slot.startTime,
-           endTime: slot.endTime
-         })
-         // Remove the old slot
-         setBookingSlots(prev => prev.filter(s => s.id !== slotId))
-         toast.success('Slot loaded for editing. Update and click Add Slot to save.')
-       }
-     }
+           const handleEditSlot = (slotId: number) => {
+        const slot = bookingSlots.find(s => s.id === slotId)
+        if (slot) {
+          setEditingSlot(slot)
+          setShowEditModal(true)
+        }
+      }
+
+      const handleUpdateSlot = () => {
+        if (!editingSlot) return
+        
+        if (!editingSlot.date || !editingSlot.startTime || !editingSlot.endTime) {
+          toast.error('Please fill in all fields')
+          return
+        }
+
+        if (editingSlot.startTime >= editingSlot.endTime) {
+          toast.error('End time must be after start time')
+          return
+        }
+
+        setBookingSlots(prev => prev.map(slot => 
+          slot.id === editingSlot.id ? editingSlot : slot
+        ))
+        
+        setShowEditModal(false)
+        setEditingSlot(null)
+        toast.success('Booking slot updated successfully!')
+      }
+
+      const handleCancelEdit = () => {
+        setShowEditModal(false)
+        setEditingSlot(null)
+      }
 
      const handleDeleteSlot = (slotId: number) => {
        setBookingSlots(prev => prev.filter(s => s.id !== slotId))
@@ -610,11 +660,84 @@ export default function BookingSettings() {
                        <span className="text-slate-700">Opened: Aug 3, 10:00 AM → 10:20 AM</span>
                      </div>
                    </div>
-                 </div>
-              </div>
-         </div>
+                                  </div>
+               </div>
+          </div>
 
-       </div>
-     </div>
-   )
+          {/* Edit Slot Modal */}
+          {showEditModal && editingSlot && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-slate-800">Edit Booking Slot</h3>
+                  <button 
+                    onClick={handleCancelEdit}
+                    className="text-slate-400 hover:text-slate-600"
+                  >
+                    ✕
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Date</label>
+                    <input
+                      type="date"
+                      value={editingSlot.date}
+                      onChange={(e) => setEditingSlot(prev => ({ ...prev, date: e.target.value }))}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Start Time</label>
+                    <input
+                      type="time"
+                      value={editingSlot.startTime}
+                      onChange={(e) => setEditingSlot(prev => ({ ...prev, startTime: e.target.value }))}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">End Time</label>
+                    <input
+                      type="time"
+                      value={editingSlot.endTime}
+                      onChange={(e) => setEditingSlot(prev => ({ ...prev, endTime: e.target.value }))}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Status</label>
+                    <select
+                      value={editingSlot.status}
+                      onChange={(e) => setEditingSlot(prev => ({ ...prev, status: e.target.value }))}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-slate-800"
+                    >
+                      <option value="open">Open</option>
+                      <option value="closed">Closed</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="flex space-x-3 mt-6">
+                  <button
+                    onClick={handleUpdateSlot}
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-4 py-2 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-800 transition-all duration-300"
+                  >
+                    Update Slot
+                  </button>
+                  <button
+                    onClick={handleCancelEdit}
+                    className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400 transition-all duration-300"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+    )
 } 
