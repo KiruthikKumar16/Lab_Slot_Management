@@ -232,47 +232,35 @@ export default function BookingSettings() {
         {/* Mode Toggle Switch */}
         <div className="glass-card p-6 mb-6">
           <div className="flex items-center justify-center">
-            <div className="relative bg-gradient-to-r from-slate-100 to-slate-200 rounded-2xl p-1.5 w-96 shadow-inner">
+            <div className="relative bg-slate-200 rounded-full p-1 w-80">
               <button
                 onClick={() => setActiveMode('regular')}
-                className={`relative z-10 px-10 py-4 rounded-xl font-semibold transition-all duration-500 ease-out ${
+                className={`relative z-10 px-8 py-3 rounded-full font-semibold transition-all duration-300 ${
                   activeMode === 'regular'
-                    ? 'text-blue-700 bg-white shadow-xl transform scale-105'
-                    : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
+                    ? 'text-blue-600 bg-white shadow-lg'
+                    : 'text-slate-600 hover:text-slate-800'
                 }`}
               >
-                <div className="flex items-center space-x-3">
-                  <div className={`p-1.5 rounded-lg transition-colors ${
-                    activeMode === 'regular' ? 'bg-blue-100' : 'bg-slate-100'
-                  }`}>
-                    <Shield className={`w-5 h-5 ${
-                      activeMode === 'regular' ? 'text-blue-600' : 'text-slate-400'
-                    }`} />
-                  </div>
-                  <span className="text-lg">Regular Booking</span>
+                <div className="flex items-center space-x-2">
+                  <Shield className="w-5 h-5" />
+                  <span>Regular Booking</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveMode('emergency')}
-                className={`relative z-10 px-10 py-4 rounded-xl font-semibold transition-all duration-500 ease-out ${
+                className={`relative z-10 px-8 py-3 rounded-full font-semibold transition-all duration-300 ${
                   activeMode === 'emergency'
-                    ? 'text-orange-700 bg-white shadow-xl transform scale-105'
-                    : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
+                    ? 'text-orange-600 bg-white shadow-lg'
+                    : 'text-slate-600 hover:text-slate-800'
                 }`}
               >
-                <div className="flex items-center space-x-3">
-                  <div className={`p-1.5 rounded-lg transition-colors ${
-                    activeMode === 'emergency' ? 'bg-orange-100' : 'bg-slate-100'
-                  }`}>
-                    <Zap className={`w-5 h-5 ${
-                      activeMode === 'emergency' ? 'text-orange-600' : 'text-slate-400'
-                    }`} />
-                  </div>
-                  <span className="text-lg">Emergency Booking</span>
+                <div className="flex items-center space-x-2">
+                  <Zap className="w-5 h-5" />
+                  <span>Emergency Booking</span>
                 </div>
               </button>
               <div
-                className={`absolute top-1.5 bottom-1.5 w-1/2 bg-white rounded-xl shadow-lg transition-all duration-500 ease-out ${
+                className={`absolute top-1 bottom-1 w-1/2 bg-white rounded-full shadow-lg transition-all duration-300 ${
                   activeMode === 'emergency' ? 'translate-x-full' : 'translate-x-0'
                 }`}
               />
@@ -327,23 +315,44 @@ export default function BookingSettings() {
                 </div>
               </div>
 
-              {/* Regular Message */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-3">Regular Booking Message</label>
-                <div className="relative">
-                  <MessageSquare className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-                  <textarea
-                    value={settings.message}
-                    onChange={(e) => setSettings(prev => ({ ...prev, message: e.target.value }))}
-                    rows={3}
-                    className="w-full pl-10 pr-3 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-slate-800"
-                    placeholder="Message to show when regular booking is closed..."
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+                             {/* Regular Message */}
+               <div>
+                 <label className="block text-sm font-medium text-slate-700 mb-3">Regular Booking Message</label>
+                 <div className="relative">
+                   <MessageSquare className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                   <textarea
+                     value={settings.message}
+                     onChange={(e) => setSettings(prev => ({ ...prev, message: e.target.value }))}
+                     rows={3}
+                     className="w-full pl-10 pr-3 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-slate-800"
+                     placeholder="Message to show when regular booking is closed..."
+                   />
+                 </div>
+               </div>
+
+               {/* Save Button - Inside Regular Booking Section */}
+               <div className="flex justify-center pt-6">
+                 <button
+                   onClick={handleSave}
+                   disabled={saving}
+                   className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-8 py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-800 transition-all duration-300 flex items-center space-x-3 disabled:opacity-50 shadow-lg hover:shadow-xl"
+                 >
+                   {saving ? (
+                     <>
+                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                       <span>Saving Settings...</span>
+                     </>
+                   ) : (
+                     <>
+                       <Save className="w-5 h-5" />
+                       <span>Save Settings</span>
+                     </>
+                   )}
+                 </button>
+               </div>
+             </div>
+           </div>
+         )}
 
         {/* Emergency Booking Settings */}
         {activeMode === 'emergency' && (
@@ -479,28 +488,7 @@ export default function BookingSettings() {
           </div>
         )}
 
-        {/* Save Button */}
-        <div className="glass-card p-6">
-          <div className="flex justify-end">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-800 transition-all duration-300 flex items-center space-x-3 disabled:opacity-50 shadow-lg hover:shadow-xl"
-            >
-              {saving ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Saving Settings...</span>
-                </>
-              ) : (
-                <>
-                  <Save className="w-5 h-5" />
-                  <span>Save Settings</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
+
       </div>
     </div>
   )
