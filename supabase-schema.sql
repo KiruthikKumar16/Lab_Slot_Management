@@ -28,11 +28,14 @@ CREATE TABLE public.users (
 -- Booking system settings (for admin to control booking availability)
 CREATE TABLE public.booking_system_settings (
   id SERIAL PRIMARY KEY,
-  is_booking_open BOOLEAN DEFAULT false,
-  booking_start_date DATE,
-  booking_end_date DATE,
-  allowed_days TEXT[], -- ['sunday', 'monday', etc.]
+  is_regular_booking_enabled BOOLEAN DEFAULT true, -- Regular Sunday booking
+  is_emergency_booking_open BOOLEAN DEFAULT false, -- Admin override for weekdays
+  emergency_booking_start TIMESTAMP WITH TIME ZONE, -- When emergency booking starts
+  emergency_booking_end TIMESTAMP WITH TIME ZONE, -- When emergency booking ends
+  emergency_allowed_days TEXT[], -- Days for emergency booking
+  regular_allowed_days TEXT[] DEFAULT ARRAY['sunday'], -- Regular booking days
   message TEXT, -- Custom message when booking is closed
+  emergency_message TEXT, -- Message for emergency booking
   updated_by INTEGER REFERENCES public.users(id),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -139,8 +142,8 @@ INSERT INTO public.users (email, name, role) VALUES
 ON CONFLICT (email) DO NOTHING;
 
 -- Insert default booking system settings
-INSERT INTO public.booking_system_settings (is_booking_open, booking_start_date, booking_end_date, allowed_days, message) VALUES
-(true, CURRENT_DATE, CURRENT_DATE + INTERVAL '30 days', ARRAY['sunday'], 'Booking is currently open for Sundays only. Contact admin for special requests.')
+INSERT INTO public.booking_system_settings (is_regular_booking_enabled, is_emergency_booking_open, regular_allowed_days, message, emergency_message) VALUES
+(true, false, ARRAY['sunday'], 'Regular booking is available every Sunday. Check back on Sunday to book your lab session.', 'Emergency booking is currently open due to slot availability. Book now!')
 ON CONFLICT (id) DO NOTHING;
 
 -- Insert sample lab slots for the next few days

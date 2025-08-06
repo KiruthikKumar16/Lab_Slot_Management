@@ -16,11 +16,14 @@ export default function BookingSettings() {
   const [saving, setSaving] = useState(false)
   const [settings, setSettings] = useState<BookingSystemSettings>({
     id: 1,
-    is_booking_open: false,
-    booking_start_date: new Date().toISOString().split('T')[0],
-    booking_end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    allowed_days: ['sunday'],
-    message: 'Booking is currently closed. Contact administrator for assistance.',
+    is_regular_booking_enabled: true,
+    is_emergency_booking_open: false,
+    emergency_booking_start: undefined,
+    emergency_booking_end: undefined,
+    emergency_allowed_days: [],
+    regular_allowed_days: ['sunday'],
+    message: 'Regular booking is available every Sunday. Check back on Sunday to book your lab session.',
+    emergency_message: 'Emergency booking is currently open due to slot availability. Book now!',
     updated_at: new Date().toISOString()
   })
 
@@ -106,12 +109,21 @@ export default function BookingSettings() {
     }
   }
 
-  const handleDayToggle = (day: string) => {
+  const handleRegularDayToggle = (day: string) => {
     setSettings(prev => ({
       ...prev,
-      allowed_days: prev.allowed_days.includes(day)
-        ? prev.allowed_days.filter(d => d !== day)
-        : [...prev.allowed_days, day]
+      regular_allowed_days: prev.regular_allowed_days.includes(day)
+        ? prev.regular_allowed_days.filter(d => d !== day)
+        : [...prev.regular_allowed_days, day]
+    }))
+  }
+
+  const handleEmergencyDayToggle = (day: string) => {
+    setSettings(prev => ({
+      ...prev,
+      emergency_allowed_days: prev.emergency_allowed_days?.includes(day)
+        ? prev.emergency_allowed_days.filter(d => d !== day)
+        : [...(prev.emergency_allowed_days || []), day]
     }))
   }
 
@@ -138,57 +150,36 @@ export default function BookingSettings() {
           <p className="text-slate-600 text-lg">Control when students can book lab sessions</p>
         </div>
 
-        {/* Settings Form */}
-        <div className="glass-card p-6">
+        {/* Regular Booking Settings */}
+        <div className="glass-card p-6 mb-6">
+          <h2 className="text-xl font-semibold text-slate-800 mb-4">Regular Booking (Sunday Schedule)</h2>
           <div className="space-y-6">
-            {/* Booking Status */}
+            {/* Regular Booking Status */}
             <div>
               <label className="flex items-center space-x-3">
                 <input
                   type="checkbox"
-                  checked={settings.is_booking_open}
-                  onChange={(e) => setSettings(prev => ({ ...prev, is_booking_open: e.target.checked }))}
+                  checked={settings.is_regular_booking_enabled}
+                  onChange={(e) => setSettings(prev => ({ ...prev, is_regular_booking_enabled: e.target.checked }))}
                   className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                 />
-                <span className="font-semibold text-slate-800">Enable Booking System</span>
+                <span className="font-semibold text-slate-800">Enable Regular Booking</span>
               </label>
               <p className="text-sm text-slate-600 ml-7 mt-1">
-                When enabled, students can book lab sessions according to the settings below
+                Students can book lab sessions on regular scheduled days (typically Sundays)
               </p>
             </div>
 
-            {/* Date Range */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Booking Start Date</label>
-                <input
-                  type="date"
-                  value={settings.booking_start_date}
-                  onChange={(e) => setSettings(prev => ({ ...prev, booking_start_date: e.target.value }))}
-                  className="w-full px-3 py-2 border border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-800"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Booking End Date</label>
-                <input
-                  type="date"
-                  value={settings.booking_end_date}
-                  onChange={(e) => setSettings(prev => ({ ...prev, booking_end_date: e.target.value }))}
-                  className="w-full px-3 py-2 border border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-800"
-                />
-              </div>
-            </div>
-
-            {/* Allowed Days */}
+            {/* Regular Allowed Days */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-3">Allowed Days</label>
+              <label className="block text-sm font-medium text-slate-700 mb-3">Regular Booking Days</label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {daysOfWeek.map(day => (
                   <label key={day.value} className="flex items-center space-x-2">
                     <input
                       type="checkbox"
-                      checked={settings.allowed_days.includes(day.value)}
-                      onChange={() => handleDayToggle(day.value)}
+                      checked={settings.regular_allowed_days.includes(day.value)}
+                      onChange={() => handleRegularDayToggle(day.value)}
                       className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                     />
                     <span className="text-sm text-slate-700">{day.label}</span>
@@ -197,17 +188,122 @@ export default function BookingSettings() {
               </div>
             </div>
 
-            {/* Custom Message */}
+            {/* Regular Message */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Custom Message (when booking is closed)</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Regular Booking Message</label>
               <textarea
                 value={settings.message}
                 onChange={(e) => setSettings(prev => ({ ...prev, message: e.target.value }))}
-                rows={3}
+                rows={2}
                 className="w-full px-3 py-2 border border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-800"
-                placeholder="Enter a custom message to display when booking is closed..."
+                placeholder="Message to show when regular booking is closed..."
               />
             </div>
+          </div>
+        </div>
+
+        {/* Emergency Booking Settings */}
+        <div className="glass-card p-6">
+          <h2 className="text-xl font-semibold text-slate-800 mb-4">Emergency Booking (Admin Override)</h2>
+          <div className="space-y-6">
+            {/* Emergency Booking Status */}
+            <div>
+              <label className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  checked={settings.is_emergency_booking_open}
+                  onChange={(e) => setSettings(prev => ({ ...prev, is_emergency_booking_open: e.target.checked }))}
+                  className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500"
+                />
+                <span className="font-semibold text-slate-800">Enable Emergency Booking</span>
+              </label>
+              <p className="text-sm text-slate-600 ml-7 mt-1">
+                Open booking on weekdays when slots become available due to cancellations
+              </p>
+            </div>
+
+            {/* Emergency Time Range */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Emergency Start Time</label>
+                <input
+                  type="datetime-local"
+                  value={settings.emergency_booking_start || ''}
+                  onChange={(e) => setSettings(prev => ({ ...prev, emergency_booking_start: e.target.value }))}
+                  className="w-full px-3 py-2 border border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white text-slate-800"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Emergency End Time</label>
+                <input
+                  type="datetime-local"
+                  value={settings.emergency_booking_end || ''}
+                  onChange={(e) => setSettings(prev => ({ ...prev, emergency_booking_end: e.target.value }))}
+                  className="w-full px-3 py-2 border border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white text-slate-800"
+                />
+              </div>
+            </div>
+
+            {/* Emergency Allowed Days */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-3">Emergency Booking Days</label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {daysOfWeek.map(day => (
+                  <label key={day.value} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={settings.emergency_allowed_days?.includes(day.value) || false}
+                      onChange={() => handleEmergencyDayToggle(day.value)}
+                      className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500"
+                    />
+                    <span className="text-sm text-slate-700">{day.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Emergency Message */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Emergency Booking Message</label>
+              <textarea
+                value={settings.emergency_message}
+                onChange={(e) => setSettings(prev => ({ ...prev, emergency_message: e.target.value }))}
+                rows={2}
+                className="w-full px-3 py-2 border border-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white text-slate-800"
+                placeholder="Message to show when emergency booking is open..."
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="glass-card p-6">
+          <h3 className="text-lg font-semibold text-slate-800 mb-4">Quick Actions</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button
+              onClick={() => setSettings(prev => ({
+                ...prev,
+                is_emergency_booking_open: true,
+                emergency_booking_start: new Date().toISOString().slice(0, 16),
+                emergency_booking_end: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString().slice(0, 16), // 4 hours from now
+                emergency_allowed_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+              }))}
+              className="bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-3 rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-300"
+            >
+              Open Emergency Booking (4 hours)
+            </button>
+            <button
+              onClick={() => setSettings(prev => ({
+                ...prev,
+                is_emergency_booking_open: false,
+                emergency_booking_start: undefined,
+                emergency_booking_end: undefined
+              }))}
+              className="bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-3 rounded-xl font-semibold hover:from-red-700 hover:to-red-800 transition-all duration-300"
+            >
+              Close Emergency Booking
+            </button>
+          </div>
 
             {/* Save Button */}
             <div className="flex justify-end">
@@ -237,13 +333,22 @@ export default function BookingSettings() {
           <h3 className="text-lg font-semibold text-slate-800 mb-4">Current Status</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center space-x-3">
-              <div className={`w-3 h-3 rounded-full ${settings.is_booking_open ? 'bg-green-500' : 'bg-red-500'}`} />
+              <div className={`w-3 h-3 rounded-full ${settings.is_regular_booking_enabled ? 'bg-blue-500' : 'bg-gray-500'}`} />
               <span className="text-slate-700">
-                Booking System: <span className="font-medium">{settings.is_booking_open ? 'Open' : 'Closed'}</span>
+                Regular Booking: <span className="font-medium">{settings.is_regular_booking_enabled ? 'Enabled' : 'Disabled'}</span>
+              </span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className={`w-3 h-3 rounded-full ${settings.is_emergency_booking_open ? 'bg-green-500' : 'bg-gray-500'}`} />
+              <span className="text-slate-700">
+                Emergency Booking: <span className="font-medium">{settings.is_emergency_booking_open ? 'Open' : 'Closed'}</span>
               </span>
             </div>
             <div className="text-slate-700">
-              Allowed Days: <span className="font-medium">{settings.allowed_days.length > 0 ? settings.allowed_days.join(', ') : 'None'}</span>
+              Regular Days: <span className="font-medium">{settings.regular_allowed_days.length > 0 ? settings.regular_allowed_days.join(', ') : 'None'}</span>
+            </div>
+            <div className="text-slate-700">
+              Emergency Days: <span className="font-medium">{settings.emergency_allowed_days && settings.emergency_allowed_days.length > 0 ? settings.emergency_allowed_days.join(', ') : 'None'}</span>
             </div>
           </div>
         </div>

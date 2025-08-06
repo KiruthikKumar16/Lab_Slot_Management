@@ -49,11 +49,14 @@ export interface Booking {
 
 export interface BookingSystemSettings {
   id: number
-  is_booking_open: boolean
-  booking_start_date: string
-  booking_end_date: string
-  allowed_days: string[]
+  is_regular_booking_enabled: boolean
+  is_emergency_booking_open: boolean
+  emergency_booking_start?: string
+  emergency_booking_end?: string
+  emergency_allowed_days?: string[]
+  regular_allowed_days: string[]
   message: string
+  emergency_message: string
   updated_by?: number
   updated_at: string
 } 

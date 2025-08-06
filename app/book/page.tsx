@@ -84,21 +84,54 @@ export default function BookPage() {
   const isBookingAllowed = () => {
     if (!bookingSettings) return false
     
-    // Check if booking is open
-    if (!bookingSettings.is_booking_open) return false
-    
-    // Check if current date is within booking period
-    const today = new Date()
-    const startDate = new Date(bookingSettings.booking_start_date)
-    const endDate = new Date(bookingSettings.booking_end_date)
-    
-    if (today < startDate || today > endDate) return false
-    
-    // Check if current day is allowed
+    const now = new Date()
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
-    const currentDay = dayNames[today.getDay()]
+    const currentDay = dayNames[now.getDay()]
     
-    return bookingSettings.allowed_days.includes(currentDay)
+    // Check emergency booking first (takes priority)
+    if (bookingSettings.is_emergency_booking_open) {
+      const emergencyStart = bookingSettings.emergency_booking_start ? new Date(bookingSettings.emergency_booking_start) : null
+      const emergencyEnd = bookingSettings.emergency_booking_end ? new Date(bookingSettings.emergency_booking_end) : null
+      
+      // Check if we're within emergency booking time window
+      if (emergencyStart && emergencyEnd) {
+        if (now >= emergencyStart && now <= emergencyEnd) {
+          // Check if current day is allowed for emergency booking
+          if (bookingSettings.emergency_allowed_days?.includes(currentDay)) {
+            return true
+          }
+        }
+      }
+    }
+    
+    // Check regular booking (Sunday schedule)
+    if (bookingSettings.is_regular_booking_enabled) {
+      return bookingSettings.regular_allowed_days.includes(currentDay)
+    }
+    
+    return false
+  }
+
+  const getBookingMessage = () => {
+    if (!bookingSettings) return 'Booking system is not configured.'
+    
+    const now = new Date()
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+    const currentDay = dayNames[now.getDay()]
+    
+    // Check if emergency booking is active
+    if (bookingSettings.is_emergency_booking_open) {
+      const emergencyStart = bookingSettings.emergency_booking_start ? new Date(bookingSettings.emergency_booking_start) : null
+      const emergencyEnd = bookingSettings.emergency_booking_end ? new Date(bookingSettings.emergency_booking_end) : null
+      
+      if (emergencyStart && emergencyEnd && now >= emergencyStart && now <= emergencyEnd) {
+        if (bookingSettings.emergency_allowed_days?.includes(currentDay)) {
+          return bookingSettings.emergency_message
+        }
+      }
+    }
+    
+    return bookingSettings.message
   }
 
   const handleBookSlot = async (slotId: string) => {
@@ -203,15 +236,26 @@ export default function BookPage() {
         </div>
 
         {/* Booking Status Warning */}
-        {!isBookingAllowed() && (
+        {!isBookingAllowed() && bookingSettings && (
           <div className="glass-card p-6 mb-8">
             <div className="flex items-center space-x-3">
               <AlertTriangle className="w-6 h-6 text-orange-600" />
               <div>
                 <h3 className="font-semibold text-orange-800">Booking Closed</h3>
-                <p className="text-orange-700">
-                  {bookingSettings?.message || 'Booking is currently not available. Please check back later or contact the administrator.'}
-                </p>
+                <p className="text-orange-700">{getBookingMessage()}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Emergency Booking Banner */}
+        {isBookingAllowed() && bookingSettings?.is_emergency_booking_open && (
+          <div className="glass-card p-6 mb-8 border border-green-300 bg-green-50/50">
+            <div className="flex items-center space-x-3">
+              <AlertTriangle className="w-6 h-6 text-green-600" />
+              <div>
+                <h3 className="font-semibold text-green-800">Emergency Booking Open</h3>
+                <p className="text-green-700">{bookingSettings.emergency_message}</p>
               </div>
             </div>
           </div>
