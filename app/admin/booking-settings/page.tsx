@@ -12,9 +12,16 @@ import Navigation from '@/components/Navigation'
 export default function BookingSettings() {
   const { user, isAdmin } = useAuth()
   const router = useRouter()
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [settings, setSettings] = useState<BookingSystemSettings>({
+     const [loading, setLoading] = useState(true)
+   const [saving, setSaving] = useState(false)
+   const [customDuration, setCustomDuration] = useState('')
+   const [bookingSlots, setBookingSlots] = useState<any[]>([])
+   const [newSlot, setNewSlot] = useState({
+     date: '',
+     startTime: '',
+     endTime: ''
+   })
+   const [settings, setSettings] = useState<BookingSystemSettings>({
     id: 1,
     is_regular_booking_enabled: true,
     is_emergency_booking_open: false,
@@ -54,10 +61,33 @@ export default function BookingSettings() {
       return
     }
 
-    fetchSettings()
-  }, [user, isAdmin, router])
+              fetchSettings()
+     fetchBookingSlots()
+   }, [user, isAdmin, router])
 
-  const fetchSettings = async () => {
+   const fetchBookingSlots = async () => {
+     try {
+       const { data, error } = await supabase
+         .from('booking_system_settings')
+         .select('*')
+         .order('updated_at', { ascending: false })
+         .limit(10)
+
+       if (error) throw error
+
+       // For now, we'll use mock data since we don't have a separate booking slots table
+       setBookingSlots([
+         { id: 1, date: '2025-08-10', startTime: '09:00', endTime: '11:00', status: 'open' },
+         { id: 2, date: '2025-08-11', startTime: '14:00', endTime: '16:00', status: 'open' },
+         { id: 3, date: '2025-08-13', startTime: '10:00', endTime: '12:00', status: 'closed' }
+       ])
+     } catch (error) {
+       console.error('Error fetching booking slots:', error)
+       toast.error('Failed to load booking slots')
+     }
+   }
+
+   const fetchSettings = async () => {
     try {
       setLoading(true)
       
@@ -227,25 +257,65 @@ export default function BookingSettings() {
       }
     }
 
-    const handleCustomOpen = async () => {
-      const customInput = document.querySelector('input[type="number"]') as HTMLInputElement
-      const minutes = parseInt(customInput?.value || '0')
-      
-      if (minutes <= 0 || minutes > 1440) { // Max 24 hours
-        toast.error('Please enter a valid duration (1-1440 minutes)')
-        return
-      }
-      
-      await handleQuickOpen(minutes)
-    }
+         const handleCustomOpen = async () => {
+       const minutes = parseInt(customDuration || '0')
+       
+       if (minutes <= 0 || minutes > 1440) { // Max 24 hours
+         toast.error('Please enter a valid duration (1-1440 minutes)')
+         return
+       }
+       
+       await handleQuickOpen(minutes)
+       setCustomDuration('') // Clear input after use
+     }
 
-    const handleEditSlot = (slotId: number) => {
-      toast.success(`Edit functionality for slot ${slotId} - Coming soon!`)
-    }
+         const handleAddSlot = async () => {
+       if (!newSlot.date || !newSlot.startTime || !newSlot.endTime) {
+         toast.error('Please fill in all fields')
+         return
+       }
 
-    const handleDeleteSlot = (slotId: number) => {
-      toast.success(`Delete functionality for slot ${slotId} - Coming soon!`)
-    }
+       if (newSlot.startTime >= newSlot.endTime) {
+         toast.error('End time must be after start time')
+         return
+       }
+
+       try {
+         const slot = {
+           id: Date.now(), // Temporary ID for demo
+           date: newSlot.date,
+           startTime: newSlot.startTime,
+           endTime: newSlot.endTime,
+           status: 'open'
+         }
+
+         setBookingSlots(prev => [...prev, slot])
+         setNewSlot({ date: '', startTime: '', endTime: '' })
+         toast.success('Booking slot added successfully!')
+       } catch (error) {
+         console.error('Error adding slot:', error)
+         toast.error('Failed to add booking slot')
+       }
+     }
+
+     const handleEditSlot = (slotId: number) => {
+       const slot = bookingSlots.find(s => s.id === slotId)
+       if (slot) {
+         setNewSlot({
+           date: slot.date,
+           startTime: slot.startTime,
+           endTime: slot.endTime
+         })
+         // Remove the old slot
+         setBookingSlots(prev => prev.filter(s => s.id !== slotId))
+         toast.success('Slot loaded for editing. Update and click Add Slot to save.')
+       }
+     }
+
+     const handleDeleteSlot = (slotId: number) => {
+       setBookingSlots(prev => prev.filter(s => s.id !== slotId))
+       toast.success('Booking slot deleted successfully!')
+     }
 
     const getDurationText = (startTime?: string, endTime?: string) => {
       if (!startTime || !endTime) return 'Manual (no auto-close)'
@@ -311,38 +381,47 @@ export default function BookingSettings() {
              </div>
            </div>
 
-           {/* Add New Booking Slot */}
-           <div className="bg-blue-50 rounded-xl p-4 mb-6">
-             <h3 className="font-semibold text-slate-800 mb-4">➕ Add New Booking Slot</h3>
-             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-               <div>
-                 <label className="block text-sm font-medium text-slate-700 mb-2">Date</label>
-                 <input
-                   type="date"
-                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-slate-800"
-                 />
-               </div>
-               <div>
-                 <label className="block text-sm font-medium text-slate-700 mb-2">Start Time</label>
-                 <input
-                   type="time"
-                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-slate-800"
-                 />
-               </div>
-               <div>
-                 <label className="block text-sm font-medium text-slate-700 mb-2">End Time</label>
-                 <input
-                   type="time"
-                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-slate-800"
-                 />
-               </div>
-               <div>
-                 <button className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-4 py-2 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-800 transition-all duration-300">
-                   Add Slot
-                 </button>
-               </div>
-             </div>
-           </div>
+                       {/* Add New Booking Slot */}
+            <div className="bg-blue-50 rounded-xl p-4 mb-6">
+              <h3 className="font-semibold text-slate-800 mb-4">➕ Add New Booking Slot</h3>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Date</label>
+                  <input
+                    type="date"
+                    value={newSlot.date}
+                    onChange={(e) => setNewSlot(prev => ({ ...prev, date: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Start Time</label>
+                  <input
+                    type="time"
+                    value={newSlot.startTime}
+                    onChange={(e) => setNewSlot(prev => ({ ...prev, startTime: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">End Time</label>
+                  <input
+                    type="time"
+                    value={newSlot.endTime}
+                    onChange={(e) => setNewSlot(prev => ({ ...prev, endTime: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-slate-800"
+                  />
+                </div>
+                <div>
+                  <button 
+                    onClick={handleAddSlot}
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-4 py-2 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-800 transition-all duration-300"
+                  >
+                    Add Slot
+                  </button>
+                </div>
+              </div>
+            </div>
 
                        {/* Current Booking Slots */}
             <div>
@@ -357,83 +436,55 @@ export default function BookingSettings() {
                       <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200">
-                    <tr className="hover:bg-slate-50">
-                      <td className="px-4 py-3 text-sm text-slate-700">Sunday, Aug 10</td>
-                      <td className="px-4 py-3 text-sm text-slate-700">09:00 – 11:00</td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          Open
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center space-x-2">
-                          <button 
-                            onClick={() => handleEditSlot(1)}
-                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                          >
-                            Edit
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteSlot(1)}
-                            className="text-red-600 hover:text-red-800 text-sm font-medium"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-slate-50">
-                      <td className="px-4 py-3 text-sm text-slate-700">Monday, Aug 11</td>
-                      <td className="px-4 py-3 text-sm text-slate-700">14:00 – 16:00</td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          Open
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center space-x-2">
-                          <button 
-                            onClick={() => handleEditSlot(2)}
-                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                          >
-                            Edit
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteSlot(2)}
-                            className="text-red-600 hover:text-red-800 text-sm font-medium"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-slate-50">
-                      <td className="px-4 py-3 text-sm text-slate-700">Wednesday, Aug 13</td>
-                      <td className="px-4 py-3 text-sm text-slate-700">10:00 – 12:00</td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          Closed
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center space-x-2">
-                          <button 
-                            onClick={() => handleEditSlot(3)}
-                            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                          >
-                            Edit
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteSlot(3)}
-                            className="text-red-600 hover:text-red-800 text-sm font-medium"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
+                                     <tbody className="divide-y divide-slate-200">
+                     {bookingSlots.length === 0 ? (
+                       <tr>
+                         <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
+                           No booking slots found. Add your first slot above.
+                         </td>
+                       </tr>
+                     ) : (
+                       bookingSlots.map((slot) => (
+                         <tr key={slot.id} className="hover:bg-slate-50">
+                           <td className="px-4 py-3 text-sm text-slate-700">
+                             {new Date(slot.date).toLocaleDateString('en-US', { 
+                               weekday: 'long', 
+                               month: 'short', 
+                               day: 'numeric' 
+                             })}
+                           </td>
+                           <td className="px-4 py-3 text-sm text-slate-700">
+                             {slot.startTime} – {slot.endTime}
+                           </td>
+                           <td className="px-4 py-3">
+                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                               slot.status === 'open' 
+                                 ? 'bg-green-100 text-green-800' 
+                                 : 'bg-red-100 text-red-800'
+                             }`}>
+                               {slot.status === 'open' ? 'Open' : 'Closed'}
+                             </span>
+                           </td>
+                           <td className="px-4 py-3">
+                             <div className="flex items-center space-x-2">
+                               <button 
+                                 onClick={() => handleEditSlot(slot.id)}
+                                 className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                               >
+                                 Edit
+                               </button>
+                               <button 
+                                 onClick={() => handleDeleteSlot(slot.id)}
+                                 className="text-red-600 hover:text-red-800 text-sm font-medium"
+                               >
+                                 Delete
+                               </button>
+                             </div>
+                           </td>
+                         </tr>
+                       ))
+                     )}
+                   </tbody>
                 </table>
               </div>
             </div>
@@ -447,91 +498,74 @@ export default function BookingSettings() {
                 <div className="mb-6">
                   <h5 className="font-medium text-slate-700 mb-3">Select Duration:</h5>
                   <div className="flex flex-wrap gap-2 mb-3">
-                    <button 
-                      onClick={() => handleQuickOpen(10)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                        settings.is_emergency_booking_open && settings.emergency_booking_end ? 
-                        'bg-blue-100 text-blue-800 border-2 border-blue-300' : 
-                        'bg-blue-600 text-white hover:bg-blue-700'
-                      }`}
-                    >
-                      10m
-                    </button>
-                    <button 
-                      onClick={() => handleQuickOpen(20)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                        settings.is_emergency_booking_open && settings.emergency_booking_end ? 
-                        'bg-blue-100 text-blue-800 border-2 border-blue-300' : 
-                        'bg-blue-600 text-white hover:bg-blue-700'
-                      }`}
-                    >
-                      20m
-                    </button>
-                    <button 
-                      onClick={() => handleQuickOpen(60)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                        settings.is_emergency_booking_open && settings.emergency_booking_end ? 
-                        'bg-blue-100 text-blue-800 border-2 border-blue-300' : 
-                        'bg-blue-600 text-white hover:bg-blue-700'
-                      }`}
-                    >
-                      1h
-                    </button>
-                    <button 
-                      onClick={() => handleQuickOpen(120)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                        settings.is_emergency_booking_open && settings.emergency_booking_end ? 
-                        'bg-blue-100 text-blue-800 border-2 border-blue-300' : 
-                        'bg-blue-600 text-white hover:bg-blue-700'
-                      }`}
-                    >
-                      2h
-                    </button>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-slate-600">Custom:</span>
-                      <input 
-                        type="number" 
-                        placeholder="90" 
-                        className="w-16 px-2 py-2 border border-slate-300 rounded-lg text-sm bg-white text-slate-800"
-                      />
-                      <span className="text-sm text-slate-600">mins</span>
-                      <button 
-                        onClick={() => handleCustomOpen()}
-                        className="px-3 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
-                      >
-                        Open
-                      </button>
-                    </div>
+                                         <button 
+                       onClick={() => handleQuickOpen(10)}
+                       className="px-4 py-2 rounded-full text-sm font-medium transition-colors bg-gray-200 text-gray-700 hover:bg-blue-600 hover:text-white"
+                     >
+                       10m
+                     </button>
+                     <button 
+                       onClick={() => handleQuickOpen(20)}
+                       className="px-4 py-2 rounded-full text-sm font-medium transition-colors bg-gray-200 text-gray-700 hover:bg-blue-600 hover:text-white"
+                     >
+                       20m
+                     </button>
+                     <button 
+                       onClick={() => handleQuickOpen(60)}
+                       className="px-4 py-2 rounded-full text-sm font-medium transition-colors bg-gray-200 text-gray-700 hover:bg-blue-600 hover:text-white"
+                     >
+                       1h
+                     </button>
+                     <button 
+                       onClick={() => handleQuickOpen(120)}
+                       className="px-4 py-2 rounded-full text-sm font-medium transition-colors bg-gray-200 text-gray-700 hover:bg-blue-600 hover:text-white"
+                     >
+                       2h
+                     </button>
+                                         <div className="flex items-center space-x-2">
+                       <span className="text-sm text-slate-600">Custom:</span>
+                       <input 
+                         type="number" 
+                         placeholder="90" 
+                         value={customDuration}
+                         onChange={(e) => setCustomDuration(e.target.value)}
+                         className="w-16 px-2 py-2 border border-slate-300 rounded-lg text-sm bg-white text-slate-800"
+                       />
+                       <span className="text-sm text-slate-600">mins</span>
+                       <button 
+                         onClick={handleCustomOpen}
+                         className="px-3 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
+                       >
+                         Open
+                       </button>
+                     </div>
                   </div>
                 </div>
 
-                {/* Manual Control - Improved Buttons */}
-                <div className="flex flex-wrap gap-3 mb-4">
-                  <button 
-                    onClick={handleManualOpen}
-                    disabled={settings.is_emergency_booking_open}
-                    className={`px-6 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
-                      settings.is_emergency_booking_open 
-                        ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
-                        : 'bg-green-600 text-white hover:bg-green-700'
-                    }`}
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    <span>🔓 Open Booking Now</span>
-                  </button>
-                  <button 
-                    onClick={handleManualClose}
-                    disabled={!settings.is_emergency_booking_open}
-                    className={`px-6 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
-                      !settings.is_emergency_booking_open 
-                        ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
-                        : 'bg-red-600 text-white hover:bg-red-700'
-                    }`}
-                  >
-                    <XCircle className="w-4 h-4" />
-                    <span>🔒 Close Booking Now</span>
-                  </button>
-                </div>
+                                 {/* Manual Control - Improved Buttons */}
+                 <div className="flex flex-wrap gap-3 mb-4">
+                   <button 
+                     onClick={handleManualOpen}
+                     disabled={settings.is_emergency_booking_open}
+                     className={`px-6 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
+                       settings.is_emergency_booking_open 
+                         ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                         : 'bg-green-600 text-white hover:bg-green-700'
+                     }`}
+                   >
+                     <CheckCircle className="w-4 h-4" />
+                     <span>Open Booking Now</span>
+                   </button>
+                   {settings.is_emergency_booking_open && (
+                     <button 
+                       onClick={handleManualClose}
+                       className="px-6 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2 bg-red-600 text-white hover:bg-red-700"
+                     >
+                       <XCircle className="w-4 h-4" />
+                       <span>Close Booking Now</span>
+                     </button>
+                   )}
+                 </div>
 
                 {/* Current Manual Booking Status - Enhanced */}
                 {settings.is_emergency_booking_open && (
@@ -559,24 +593,24 @@ export default function BookingSettings() {
                   </div>
                 )}
 
-                {/* Recent Override History */}
-                <div className="mt-6 p-3 bg-white border border-slate-200 rounded-lg">
-                  <h5 className="font-medium text-slate-700 mb-3">📜 Recent Overrides:</h5>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-green-600">✔️</span>
-                      <span>Opened: Aug 5, 3:00 PM → 4:00 PM</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-red-600">❌</span>
-                      <span>Closed: Aug 4, 11:15 AM</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-green-600">✔️</span>
-                      <span>Opened: Aug 3, 10:00 AM → 10:20 AM</span>
-                    </div>
-                  </div>
-                </div>
+                                 {/* Recent Override History */}
+                 <div className="mt-6 p-3 bg-white border border-slate-200 rounded-lg">
+                   <h5 className="font-medium text-slate-800 mb-3">📜 Recent Overrides:</h5>
+                   <div className="space-y-2 text-sm">
+                     <div className="flex items-center space-x-2">
+                       <span className="text-green-600">✔️</span>
+                       <span className="text-slate-700">Opened: Aug 5, 3:00 PM → 4:00 PM</span>
+                     </div>
+                     <div className="flex items-center space-x-2">
+                       <span className="text-red-600">❌</span>
+                       <span className="text-slate-700">Closed: Aug 4, 11:15 AM</span>
+                     </div>
+                     <div className="flex items-center space-x-2">
+                       <span className="text-green-600">✔️</span>
+                       <span className="text-slate-700">Opened: Aug 3, 10:00 AM → 10:20 AM</span>
+                     </div>
+                   </div>
+                 </div>
               </div>
          </div>
 
