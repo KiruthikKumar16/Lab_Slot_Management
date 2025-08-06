@@ -106,8 +106,8 @@ export default function BookingSettings() {
          // Create a proper chronological history
          const history: any[] = []
          
-         // Process records in reverse chronological order to build proper timeline
-         for (let i = data.length - 1; i >= 0; i--) {
+         // Process records in chronological order to build proper timeline
+         for (let i = 0; i < data.length; i++) {
            const record = data[i]
            
            // Only add if this record represents a state change
@@ -126,9 +126,12 @@ export default function BookingSettings() {
            }
          }
          
-         // Take the last 4 entries (most recent)
-         const recentHistory = history.slice(-4)
-         setOverrideHistory(recentHistory)
+         // Sort by timestamp (newest first) and take the first 4 entries
+         const sortedHistory = history
+           .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+           .slice(0, 4)
+         
+         setOverrideHistory(sortedHistory)
        } else {
          // If no data, create some sample history for demonstration
          const now = new Date()
@@ -777,31 +780,23 @@ export default function BookingSettings() {
                     )}
                   </div>
 
-                {/* Current Manual Booking Status - Enhanced */}
-                {settings.is_emergency_booking_open && (
-                  <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-green-800">
-                          🟢 Booking is OPEN
-                        </span>
-                      </div>
-                      <button 
-                        onClick={handleManualClose}
-                        className="text-sm text-red-600 hover:text-red-800 font-medium bg-red-50 px-3 py-1 rounded"
-                      >
-                        🔒 End Early
-                      </button>
-                    </div>
-                    {settings.emergency_booking_end && (
-                      <div className="text-xs text-green-600">
-                        <p>⏰ Auto-closes at: {new Date(settings.emergency_booking_end).toLocaleTimeString()}</p>
-                        <p>🕒 Duration: {getDurationText(settings.emergency_booking_start, settings.emergency_booking_end)}</p>
-                      </div>
-                    )}
-                  </div>
-                )}
+                                 {/* Current Manual Booking Status - Enhanced */}
+                 {settings.is_emergency_booking_open && (
+                   <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                     <div className="flex items-center space-x-2 mb-2">
+                       <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                       <span className="text-sm font-medium text-green-800">
+                         🟢 Booking is OPEN
+                       </span>
+                     </div>
+                     {settings.emergency_booking_end && (
+                       <div className="text-xs text-green-600">
+                         <p>⏰ Auto-closes at: {new Date(settings.emergency_booking_end).toLocaleTimeString()}</p>
+                         <p>🕒 Duration: {getDurationText(settings.emergency_booking_start, settings.emergency_booking_end)}</p>
+                       </div>
+                     )}
+                   </div>
+                 )}
 
                                                   {/* Recent Override History */}
                  <div className="mt-6 p-3 bg-white border border-slate-200 rounded-lg">
