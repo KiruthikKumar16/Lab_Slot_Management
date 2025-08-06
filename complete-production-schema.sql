@@ -8,7 +8,7 @@
 -- CLEAN SLATE - DROP EXISTING OBJECTS
 -- =============================================================================
 
--- Drop existing policies first
+-- Drop existing policies first (with IF EXISTS to handle missing tables)
 DROP POLICY IF EXISTS "Users can view own profile" ON public.users;
 DROP POLICY IF EXISTS "Users can update own profile" ON public.users;
 DROP POLICY IF EXISTS "Users can insert own profile" ON public.users;
@@ -20,14 +20,25 @@ DROP POLICY IF EXISTS "Users can view own bookings" ON public.bookings;
 DROP POLICY IF EXISTS "Users can create own bookings" ON public.bookings;
 DROP POLICY IF EXISTS "Users can update own bookings" ON public.bookings;
 DROP POLICY IF EXISTS "Admins can view all bookings" ON public.bookings;
-DROP POLICY IF EXISTS "Admins can read all booking slots" ON public.booking_slots;
-DROP POLICY IF EXISTS "Admins can insert booking slots" ON public.booking_slots;
-DROP POLICY IF EXISTS "Admins can update booking slots" ON public.booking_slots;
-DROP POLICY IF EXISTS "Admins can delete booking slots" ON public.booking_slots;
+
+-- Drop booking_slots policies separately to handle case where table doesn't exist
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'booking_slots') THEN
+        DROP POLICY IF EXISTS "Admins can read all booking slots" ON public.booking_slots;
+        DROP POLICY IF EXISTS "Admins can insert booking slots" ON public.booking_slots;
+        DROP POLICY IF EXISTS "Admins can update booking slots" ON public.booking_slots;
+        DROP POLICY IF EXISTS "Admins can delete booking slots" ON public.booking_slots;
+    END IF;
+END $$;
 
 -- Drop existing functions
 DROP FUNCTION IF EXISTS mark_no_shows() CASCADE;
 DROP FUNCTION IF EXISTS update_lab_slot_capacity() CASCADE;
+DROP FUNCTION IF EXISTS update_user_role() CASCADE;
+
+-- Drop existing triggers
+DROP TRIGGER IF EXISTS update_user_role_trigger ON public.users;
 
 -- Drop existing tables (in correct order due to foreign keys)
 DROP TABLE IF EXISTS public.bookings CASCADE;
