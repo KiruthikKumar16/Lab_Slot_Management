@@ -267,21 +267,21 @@ export default function BookingSettings() {
              </div>
            </div>
 
-           {/* Quick Actions */}
-           <div className="mt-6 p-4 bg-slate-50 rounded-xl">
-             <h4 className="font-semibold text-slate-800 mb-3">Quick Actions</h4>
-             <div className="flex flex-wrap gap-3">
-               <button className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
-                 Open All Week
-               </button>
-               <button className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">
-                 Close All Week
-               </button>
-               <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-                 Copy Last Week
-               </button>
-             </div>
-           </div>
+                       {/* Manual Booking Control */}
+            <div className="mt-6 p-4 bg-slate-50 rounded-xl">
+              <h4 className="font-semibold text-slate-800 mb-3">Manual Booking Control</h4>
+              <p className="text-sm text-slate-600 mb-4">Quick on-the-spot control for immediate booking access</p>
+              <div className="flex flex-wrap gap-3">
+                <button className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center space-x-2">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Open Booking Now</span>
+                </button>
+                <button className="px-6 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center space-x-2">
+                  <XCircle className="w-4 h-4" />
+                  <span>Close Booking Now</span>
+                </button>
+              </div>
+            </div>
          </div>
 
        </div>
