@@ -288,8 +288,8 @@ export default function BookPage() {
 
         {/* Available Slots Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {slots.length > 0 ? (
-            slots.map((slot) => {
+          {(selectedDate ? getSlotsForDate(selectedDate) : slots).length > 0 ? (
+            (selectedDate ? getSlotsForDate(selectedDate) : slots).map((slot) => {
               const isAvailable = isSlotAvailable(slot)
               const isBooked = bookingLoading === slot.id
 
@@ -360,8 +360,20 @@ export default function BookPage() {
                 <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Calendar className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold text-slate-800 mb-2">No Slots Available</h3>
-                <p className="text-slate-600">No lab slots are currently available for the selected criteria.</p>
+                <h3 className="text-xl font-semibold text-slate-800 mb-2">
+                  {selectedDate ? 'No Slots Available for Selected Date' : 'No Slots Available'}
+                </h3>
+                <p className="text-slate-600">
+                  {selectedDate 
+                    ? `No lab slots are available for ${new Date(selectedDate).toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })}. Try selecting a different date or check back later.`
+                    : 'No lab slots are currently available for the selected criteria.'
+                  }
+                </p>
               </div>
             </div>
           )}
