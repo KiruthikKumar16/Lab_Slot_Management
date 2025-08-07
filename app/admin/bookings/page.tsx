@@ -40,6 +40,8 @@ export default function AdminBookings() {
     try {
       setLoading(true)
       
+      console.log('Fetching bookings...')
+      
       const { data, error } = await supabase
         .from('bookings')
         .select(`
@@ -49,8 +51,12 @@ export default function AdminBookings() {
         `)
         .order('created_at', { ascending: false })
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase error:', error)
+        throw error
+      }
 
+      console.log('Bookings fetched:', data?.length || 0, 'bookings')
       setBookings(data || [])
     } catch (error) {
       console.error('Error fetching bookings:', error)
