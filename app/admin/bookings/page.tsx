@@ -10,8 +10,8 @@ import toast from 'react-hot-toast'
 import Navigation from '@/components/Navigation'
 
 interface BookingWithDetails extends Booking {
-  lab_slot: LabSlot
-  user: AppUser
+  lab_slots: LabSlot
+  users: AppUser
 }
 
 export default function AdminBookings() {
@@ -46,8 +46,8 @@ export default function AdminBookings() {
         .from('bookings')
         .select(`
           *,
-          lab_slot (*),
-          user (*)
+          lab_slots!lab_slot_id (*),
+          users!user_id (*)
         `)
         .order('created_at', { ascending: false })
 
@@ -68,7 +68,7 @@ export default function AdminBookings() {
 
   const filteredBookings = bookings.filter(booking => {
     const matchesStatus = statusFilter === 'All Status' || booking.status === statusFilter.toLowerCase()
-    const matchesDate = !dateFilter || booking.lab_slot?.date === dateFilter
+    const matchesDate = !dateFilter || booking.lab_slots?.date === dateFilter
     
     return matchesStatus && matchesDate
   })
@@ -218,10 +218,10 @@ export default function AdminBookings() {
                           </div>
                           <div>
                             <div className="font-medium text-slate-800">
-                              {booking.user?.email?.split('@')[0] || 'Unknown Student'}
+                              {booking.users?.email?.split('@')[0] || 'Unknown Student'}
                             </div>
                             <div className="text-sm text-slate-600">
-                              {booking.user?.email || 'No email'}
+                              {booking.users?.email || 'No email'}
                             </div>
                           </div>
                         </div>
@@ -231,20 +231,20 @@ export default function AdminBookings() {
                         <div className="flex items-center space-x-2">
                           <Calendar className="w-4 h-4 text-slate-500" />
                           <span className="text-slate-700">
-                            {booking.lab_slot?.date ? new Date(booking.lab_slot.date).toLocaleDateString() : 'No date'}
+                            {booking.lab_slots?.date ? new Date(booking.lab_slots.date).toLocaleDateString() : 'No date'}
                           </span>
                         </div>
                         <div className="flex items-center space-x-2 mt-1">
                           <Clock className="w-4 h-4 text-slate-500" />
                           <span className="text-sm text-slate-600">
-                            {booking.lab_slot?.start_time || '00:00'} - {booking.lab_slot?.end_time || '00:00'}
+                            {booking.lab_slots?.start_time || '00:00'} - {booking.lab_slots?.end_time || '00:00'}
                           </span>
                         </div>
                       </td>
                       
                       <td className="px-6 py-4">
                         <div className="text-slate-700">
-                          {booking.lab_slot?.date ? `Lab Session ${booking.lab_slot.id}` : 'Unknown Lab'}
+                          {booking.lab_slots?.date ? `Lab Session ${booking.lab_slots.id}` : 'Unknown Lab'}
                         </div>
                       </td>
                       
