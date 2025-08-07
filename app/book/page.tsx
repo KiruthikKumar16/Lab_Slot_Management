@@ -228,11 +228,8 @@ export default function BookPage() {
         .insert({
           user_id: appUser.id,
           lab_slot_id: slotId,
-          booking_date: slotDetails.date,
-          start_time: slotDetails.start_time,
-          end_time: slotDetails.end_time,
-          status: 'confirmed',
-          remarks: slotDetails.remarks || 'Lab session booking'
+          status: 'booked',
+          samples_count: 0
         })
 
       if (bookingError) {
