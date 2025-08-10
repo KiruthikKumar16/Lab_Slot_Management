@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
 export async function POST(request: Request) {
   try {
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     const userInfo = await userInfoResponse.json()
 
     // Get user from database
-    const { data: dbUser, error: userError } = await supabase
+    const { data: dbUser, error: userError } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('email', userInfo.email)
@@ -34,14 +34,36 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Check if today is Sunday
-    const today = new Date()
-    const isSunday = today.getDay() === 0
-    if (!isSunday) {
-      return NextResponse.json(
-        { error: 'Bookings are only allowed on Sundays' }, 
-        { status: 403 }
-      )
+    // Enforce booking settings (regular/emergency rules)
+    const { data: settings } = await supabaseAdmin
+      .from('booking_system_settings')
+      .select('*')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const isBookingAllowed = () => {
+      if (!settings) return false
+      const now = new Date()
+      const dayNames = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday']
+      const currentDay = dayNames[now.getDay()]
+      // Emergency window
+      if (settings.is_emergency_booking_open) {
+        const emergencyStart = settings.emergency_booking_start ? new Date(settings.emergency_booking_start) : null
+        const emergencyEnd = settings.emergency_booking_end ? new Date(settings.emergency_booking_end) : null
+        if (emergencyStart && emergencyEnd && now >= emergencyStart && now <= emergencyEnd) {
+          if (!settings.emergency_allowed_days || settings.emergency_allowed_days.includes(currentDay)) return true
+        }
+      }
+      // Regular schedule by day
+      if (settings.is_regular_booking_enabled) {
+        if (settings.regular_allowed_days && settings.regular_allowed_days.includes(currentDay)) return true
+      }
+      return false
+    }
+
+    if (!isBookingAllowed()) {
+      return NextResponse.json({ error: 'Booking is currently closed' }, { status: 403 })
     }
 
     const { lab_slot_id } = await request.json()
@@ -51,7 +73,7 @@ export async function POST(request: Request) {
     }
 
     // Check if slot exists and is available
-    const { data: slot, error: slotError } = await supabase
+    const { data: slot, error: slotError } = await supabaseAdmin
       .from('lab_slots')
       .select('*')
       .eq('id', lab_slot_id)
@@ -72,7 +94,7 @@ export async function POST(request: Request) {
     }
 
     // Check if user already has a booking for this date
-    const { data: existingBooking } = await supabase
+    const { data: existingBooking } = await supabaseAdmin
       .from('bookings')
       .select('*')
       .eq('user_id', dbUser.id)
@@ -88,7 +110,7 @@ export async function POST(request: Request) {
     }
 
     // Check if user has any booking for the same date
-    const { data: sameDateBooking } = await supabase
+    const { data: sameDateBooking } = await supabaseAdmin
       .from('bookings')
       .select(`
         *,
@@ -107,7 +129,21 @@ export async function POST(request: Request) {
     }
 
     // Create booking
-    const { data: booking, error: bookingError } = await supabase
+    // Atomically book: mark slot booked and create booking within server operations
+    const { data: updatedSlot, error: slotUpdateErr } = await supabaseAdmin
+      .from('lab_slots')
+      .update({ status: 'booked', booked_by: dbUser.id })
+      .eq('id', lab_slot_id)
+      .eq('status', 'available')
+      .is('booked_by', null)
+      .select('id')
+      .single()
+
+    if (slotUpdateErr || !updatedSlot) {
+      return NextResponse.json({ error: 'Slot just became unavailable' }, { status: 409 })
+    }
+
+    const { data: booking, error: bookingError } = await supabaseAdmin
       .from('bookings')
       .insert({
         user_id: dbUser.id,
@@ -154,7 +190,7 @@ export async function GET(request: Request) {
     const userInfo = await userInfoResponse.json()
 
     // Get user from database
-    const { data: dbUser, error: userError } = await supabase
+    const { data: dbUser, error: userError } = await supabaseAdmin
       .from('users')
       .select('id, role')
       .eq('email', userInfo.email)
@@ -167,7 +203,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const user_id = searchParams.get('user_id')
 
-    let query = supabase
+    let query = supabaseAdmin
       .from('bookings')
       .select(`
         *,
