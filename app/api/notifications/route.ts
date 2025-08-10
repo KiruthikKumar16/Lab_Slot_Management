@@ -52,6 +52,8 @@ export async function PATCH(request: Request) {
       .eq('email', userInfo.email)
       .single()
 
+    if (!dbUser) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+
     const { ids } = await request.json()
     if (!Array.isArray(ids) || ids.length === 0) return NextResponse.json({ success: true })
 
