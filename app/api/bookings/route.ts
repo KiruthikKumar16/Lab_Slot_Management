@@ -202,6 +202,7 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const user_id = searchParams.get('user_id')
+    const booking_id = searchParams.get('booking_id')
 
     let query = supabaseAdmin
       .from('bookings')
@@ -211,8 +212,11 @@ export async function GET(request: Request) {
         user:users!user_id (email, role)
       `)
 
-    // If user_id is provided and user is admin, allow viewing other bookings
-    if (user_id) {
+    // If booking_id is provided, fetch that specific booking for the current user
+    if (booking_id) {
+      query = query.eq('id', booking_id).eq('user_id', dbUser.id)
+    } else if (user_id) {
+      // If user_id is provided and user is admin, allow viewing other bookings
       if (dbUser.role === 'admin') {
         query = query.eq('user_id', user_id)
       } else {

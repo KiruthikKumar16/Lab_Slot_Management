@@ -39,35 +39,17 @@ export default function SubmitSamplesPage({ params }: { params: { bookingId: str
   const fetchSession = async () => {
     try {
       setLoading(true)
-      
-      // Get current user ID from users table
-      const { data: currentUser, error: userError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', user?.email)
-        .single()
-
-      if (userError) throw userError
-
-      const { data, error } = await supabase
-        .from('bookings')
-        .select(`
-          *,
-          lab_slot (*)
-        `)
-        .eq('id', params.bookingId)
-        .eq('user_id', currentUser.id)
-        .single()
-
-      if (error) throw error
-
-      if (!data) {
+      const res = await fetch(`/api/bookings?booking_id=${encodeURIComponent(params.bookingId)}`)
+      const payload = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(payload?.error || 'Failed to load session')
+      const items = payload?.bookings || []
+      const record = Array.isArray(items) ? items[0] : items
+      if (!record) {
         toast.error('Session not found')
         router.push('/my-sessions')
         return
       }
-
-      setSession(data)
+      setSession(record)
     } catch (error) {
       console.error('Error fetching session:', error)
       toast.error('Failed to load session')

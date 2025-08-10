@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
 export async function POST(request: Request) {
   try {
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     const userInfo = await userInfoResponse.json()
 
     // Get user from database
-    const { data: dbUser, error: userError } = await supabase
+    const { data: dbUser, error: userError } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('email', userInfo.email)
@@ -49,11 +49,11 @@ export async function POST(request: Request) {
     }
 
     // Validate booking belongs to user
-    const { data: booking, error: bookingError } = await supabase
+    const { data: booking, error: bookingError } = await supabaseAdmin
       .from('bookings')
       .select(`
         *,
-        lab_slot (
+        lab_slot:lab_slots!lab_slot_id (
           date,
           start_time,
           end_time
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
     }
 
     // Update booking with samples
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from('bookings')
       .update({
         samples_count,
