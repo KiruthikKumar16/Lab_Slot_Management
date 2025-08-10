@@ -65,18 +65,28 @@ export default function StudentDashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      // Get the user from our database using email
-      const { data: dbUser, error: userError } = await supabase
+      // Get the user from our database using email; if not present, create it
+      let { data: dbUser, error: userError } = await supabase
         .from('users')
         .select('id')
         .eq('email', user?.email)
         .single()
 
-      if (userError) {
-        console.error('Error fetching user from database:', userError)
-        toast.error('Failed to load user data')
-        setLoading(false)
-        return
+      if (userError || !dbUser) {
+        console.warn('User not found in users table, creating...')
+        const { data: newUser, error: createErr } = await supabase
+          .from('users')
+          .insert({ email: user?.email ?? '', role: 'student' })
+          .select('id')
+          .single()
+
+        if (createErr || !newUser) {
+          console.error('Failed to ensure user exists:', createErr)
+          toast.error('Failed to load user data')
+          setLoading(false)
+          return
+        }
+        dbUser = newUser
       }
 
       // Fetch user's booked slots using the database user ID

@@ -25,9 +25,28 @@ export default function BookPage() {
       return
     }
 
-    fetchBookingSettings()
-    fetchSlots()
-    fetchUserBookings()
+    const ensureUserThenFetch = async () => {
+      // Ensure user row exists
+      const { data: existing, error: findErr } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', user.email)
+        .maybeSingle()
+
+      if (findErr) {
+        console.error('Error checking user row:', findErr)
+      }
+
+      if (!existing) {
+        await supabase.from('users').insert({ email: user.email, role: 'student' })
+      }
+
+      await fetchBookingSettings()
+      await fetchSlots()
+      await fetchUserBookings()
+    }
+
+    ensureUserThenFetch()
   }, [user, router])
 
   const fetchBookingSettings = async () => {
