@@ -236,83 +236,28 @@ export default function BookPage() {
     try {
       setBookingLoading(slotId)
 
-      // First check if slot is still available
-      const { data: slotCheck, error: checkError } = await supabase
-        .from('lab_slots')
-        .select('status, booked_by')
-        .eq('id', slotId)
-        .single()
+      const res = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lab_slot_id: slotId })
+      })
 
-      if (checkError) throw checkError
+      const payload = await res.json().catch(() => ({}))
 
-      if (slotCheck.status !== 'available' || slotCheck.booked_by) {
-        toast.error('This slot is no longer available')
-        fetchSlots()
+      if (!res.ok) {
+        const msg = payload?.error || 'Failed to book slot'
+        toast.error(msg)
+        await fetchSlots()
         return
-      }
-
-      // Get the current user's app user ID
-      const { data: appUser, error: userError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', user.email)
-        .single()
-
-      if (userError || !appUser) {
-        toast.error('User not found. Please contact administrator.')
-        return
-      }
-
-      // Get the slot details for booking creation
-      const { data: slotDetails, error: slotError } = await supabase
-        .from('lab_slots')
-        .select('*')
-        .eq('id', slotId)
-        .single()
-
-      if (slotError) throw slotError
-
-      // Book the slot atomically: only if still available and unbooked
-      const { data: updatedSlot, error: updateErr } = await supabase
-        .from('lab_slots')
-        .update({ status: 'booked', booked_by: appUser.id })
-        .eq('id', slotId)
-        .eq('status', 'available')
-        .is('booked_by', null)
-        .select('id, status, booked_by')
-        .single()
-
-      if (updateErr) throw updateErr
-      if (!updatedSlot) {
-        toast.error('This slot just got booked by someone else')
-        fetchSlots()
-        return
-      }
-
-      // Create booking record
-      const { error: bookingError } = await supabase
-        .from('bookings')
-        .insert({
-          user_id: appUser.id,
-          lab_slot_id: slotId,
-          status: 'booked',
-          samples_count: 0
-        })
-
-      if (bookingError) {
-        console.error('Error creating booking record:', bookingError)
-        // Don't fail the entire booking if booking record creation fails
-        // The slot is already booked, so we'll just log the error
       }
 
       toast.success('Slot booked successfully!')
-      // Add to booked slots set without iterating the Set (TS downlevel iteration safe)
       setBookedSlots(prev => {
         const next = new Set<number>(prev)
         next.add(slotId)
         return next
       })
-      fetchSlots()
+      await fetchSlots()
     } catch (error) {
       console.error('Error booking slot:', error)
       toast.error('Failed to book slot')
