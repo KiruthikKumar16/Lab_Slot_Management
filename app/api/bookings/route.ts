@@ -260,14 +260,15 @@ export async function PATCH(request: Request) {
       .eq('email', userInfo.email)
       .single()
 
-    const { booking_id, status, cancelled_by } = await request.json()
+    const { booking_id, status } = await request.json()
     if (!booking_id || !status) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+    const bookingIdNum = Number(booking_id)
 
     // Ensure ownership or admin
     const { data: booking } = await supabaseAdmin
       .from('bookings')
       .select('id, user_id, lab_slot_id')
-      .eq('id', booking_id)
+      .eq('id', bookingIdNum)
       .single()
 
     if (!booking) return NextResponse.json({ error: 'Booking not found' }, { status: 404 })
@@ -278,8 +279,8 @@ export async function PATCH(request: Request) {
     // Update booking
     const { error: updErr } = await supabaseAdmin
       .from('bookings')
-      .update({ status, cancelled_by })
-      .eq('id', booking_id)
+      .update({ status })
+      .eq('id', bookingIdNum)
 
     if (updErr) return NextResponse.json({ error: 'Failed to update booking' }, { status: 500 })
 
@@ -288,6 +289,11 @@ export async function PATCH(request: Request) {
       await supabaseAdmin
         .from('lab_slots')
         .update({ status: 'available', booked_by: null })
+        .eq('id', booking.lab_slot_id)
+    } else if (status === 'booked') {
+      await supabaseAdmin
+        .from('lab_slots')
+        .update({ status: 'booked', booked_by: booking.user_id })
         .eq('id', booking.lab_slot_id)
     }
 

@@ -88,13 +88,12 @@ export default function AdminBookings() {
 
   const handleCancelBooking = async (bookingId: number) => {
     try {
-      const { error } = await supabase
-        .from('bookings')
-        .update({ status: 'cancelled' })
-        .eq('id', bookingId)
-
-      if (error) throw error
-
+      const res = await fetch('/api/bookings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ booking_id: bookingId, status: 'cancelled' })
+      })
+      if (!res.ok) throw new Error('Failed')
       toast.success('Booking cancelled successfully')
       fetchBookings()
     } catch (error) {
@@ -105,13 +104,12 @@ export default function AdminBookings() {
 
   const handleReopenBooking = async (bookingId: number) => {
     try {
-      const { error } = await supabase
-        .from('bookings')
-        .update({ status: 'booked' })
-        .eq('id', bookingId)
-
-      if (error) throw error
-
+      const res = await fetch('/api/bookings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ booking_id: bookingId, status: 'booked' })
+      })
+      if (!res.ok) throw new Error('Failed')
       toast.success('Booking reopened successfully')
       fetchBookings()
     } catch (error) {
@@ -122,13 +120,12 @@ export default function AdminBookings() {
 
   const handleRemoveBooking = async (bookingId: number) => {
     try {
-      const { error } = await supabase
-        .from('bookings')
-        .delete()
-        .eq('id', bookingId)
-
-      if (error) throw error
-
+      const res = await fetch('/api/bookings', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ booking_id: bookingId })
+      })
+      if (!res.ok) throw new Error('Failed')
       toast.success('Booking removed successfully')
       fetchBookings()
     } catch (error) {

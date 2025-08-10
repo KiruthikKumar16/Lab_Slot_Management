@@ -68,11 +68,7 @@ export default function MySessionsPage() {
       const response = await fetch('/api/bookings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          booking_id: bookingId, 
-          status: 'cancelled',
-          cancelled_by: 'self'
-        })
+        body: JSON.stringify({ booking_id: bookingId, status: 'cancelled' })
       })
 
       if (!response.ok) throw new Error('Failed to cancel booking')
