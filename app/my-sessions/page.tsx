@@ -284,7 +284,13 @@ export default function MySessionsPage() {
               <button
                 onClick={submitCancel}
                 disabled={isCancelling || !cancelReason.trim() || confirmText !== 'DELETE'}
-                className={`px-4 py-2 rounded-lg text-white ${isCancelling || !cancelReason.trim() || confirmText !== 'DELETE' ? 'bg-red-400 cursor-not-allowed opacity-60' : 'bg-red-600 hover:bg-red-700'}`}
+                className={`px-4 py-2 rounded-lg text-white ${
+                  isCancelling
+                    ? 'bg-red-600 cursor-wait'
+                    : (!cancelReason.trim() || confirmText !== 'DELETE')
+                      ? 'bg-red-400 cursor-not-allowed opacity-60'
+                      : 'bg-red-600 hover:bg-red-700'
+                }`}
               >
                 {isCancelling ? (
                   <div className="flex items-center justify-center gap-2">
