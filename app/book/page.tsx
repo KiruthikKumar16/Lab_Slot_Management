@@ -74,12 +74,18 @@ export default function BookPage() {
       setLoading(true)
       
       // Get next 7 days of slots
+      const toLocalYmd = (d: Date) => {
+        const y = d.getFullYear()
+        const m = String(d.getMonth() + 1).padStart(2, '0')
+        const day = String(d.getDate()).padStart(2, '0')
+        return `${y}-${m}-${day}`
+      }
       const today = new Date()
       const nextWeek: string[] = []
       for (let i = 0; i < 7; i++) {
         const date = new Date(today)
         date.setDate(today.getDate() + i)
-        nextWeek.push(date.toISOString().split('T')[0])
+        nextWeek.push(toLocalYmd(date))
       }
 
       // Get current user ID to also include their booked slots in the list
@@ -92,19 +98,29 @@ export default function BookPage() {
       if (userError) throw userError
 
       // Include slots that are either:
-      // - available and not booked
-      // - booked by the current user (so they remain visible as "Booked" after refresh)
-      const filter = `and(status.eq.available,booked_by.is.null),and(status.eq.booked,booked_by.eq.${currentUser.id})`
-
-      const { data, error } = await supabase
+      // - available and not booked, OR
+      // - booked by the current user
+      let { data, error } = await supabase
         .from('lab_slots')
         .select('*')
         .in('date', nextWeek)
-        .or(filter)
+        .or(`and(status.eq.available,booked_by.is.null),and(status.eq.booked,booked_by.eq.${currentUser.id})`)
         .order('date', { ascending: true })
         .order('start_time', { ascending: true })
 
       if (error) throw error
+
+      // Ensure slots booked by the user are reflected in local bookedSlots state
+      if (data && data.length > 0) {
+        const mine = data.filter(s => s.booked_by === currentUser.id && s.status === 'booked')
+        if (mine.length > 0) {
+          setBookedSlots(prev => {
+            const next = new Set<number>(prev)
+            for (const s of mine) next.add(s.id)
+            return next
+          })
+        }
+      }
 
       setSlots(data || [])
     } catch (error) {
@@ -287,12 +303,18 @@ export default function BookPage() {
   }
 
   const getAvailableDates = () => {
+    const toLocalYmd = (d: Date) => {
+      const y = d.getFullYear()
+      const m = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      return `${y}-${m}-${day}`
+    }
     const dates: string[] = []
     const today = new Date()
     for (let i = 0; i < 7; i++) {
       const date = new Date(today)
       date.setDate(today.getDate() + i)
-      dates.push(date.toISOString().split('T')[0])
+      dates.push(toLocalYmd(date))
     }
     return dates
   }
