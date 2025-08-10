@@ -20,6 +20,7 @@ export default function MySessionsPage() {
   const [loading, setLoading] = useState(true)
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
+  const [confirmText, setConfirmText] = useState('')
   const [pendingCancel, setPendingCancel] = useState<{ id: number; date: string } | null>(null)
 
   useEffect(() => {
@@ -67,6 +68,7 @@ export default function MySessionsPage() {
     }
     setPendingCancel({ id: bookingId, date: sessionDate })
     setCancelReason('')
+    setConfirmText('')
     setShowCancelModal(true)
   }
 
@@ -76,8 +78,10 @@ export default function MySessionsPage() {
       toast.error('Please provide a brief reason')
       return
     }
-    const confirmed = window.confirm('Are you sure you want to cancel this booking?')
-    if (!confirmed) return
+    if (confirmText.trim().toLowerCase() !== 'delete') {
+      toast.error("Type 'DELETE' to confirm cancellation")
+      return
+    }
 
     try {
       const response = await fetch('/api/bookings', {
@@ -252,6 +256,18 @@ export default function MySessionsPage() {
               className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800"
               placeholder="e.g., schedule conflict, feeling unwell, other"
             />
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Type <span className="font-semibold">DELETE</span> to confirm
+              </label>
+              <input
+                type="text"
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800"
+                placeholder="DELETE"
+              />
+            </div>
             <div className="mt-5 flex items-center justify-end gap-3">
               <button
                 onClick={() => { setShowCancelModal(false); setPendingCancel(null) }}
@@ -261,7 +277,8 @@ export default function MySessionsPage() {
               </button>
               <button
                 onClick={submitCancel}
-                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+                disabled={!cancelReason.trim() || confirmText.trim().toLowerCase() !== 'delete'}
+                className={`px-4 py-2 rounded-lg text-white ${(!cancelReason.trim() || confirmText.trim().toLowerCase() !== 'delete') ? 'bg-red-400 cursor-not-allowed opacity-60' : 'bg-red-600 hover:bg-red-700'}`}
               >
                 Cancel Now
               </button>
