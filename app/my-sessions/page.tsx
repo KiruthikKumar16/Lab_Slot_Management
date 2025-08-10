@@ -18,6 +18,9 @@ export default function MySessionsPage() {
   const router = useRouter()
   const [sessions, setSessions] = useState<SessionWithSlot[]>([])
   const [loading, setLoading] = useState(true)
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
+  const [pendingCancel, setPendingCancel] = useState<{ id: number; date: string } | null>(null)
 
   useEffect(() => {
     if (!user) {
@@ -54,26 +57,38 @@ export default function MySessionsPage() {
     }
   }
 
-  const handleCancelBooking = async (bookingId: number, sessionDate: string) => {
+  const openCancelModal = (bookingId: number, sessionDate: string) => {
     const today = new Date()
     const sessionDateObj = new Date(sessionDate)
     const daysUntilSession = Math.ceil((sessionDateObj.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-
     if (daysUntilSession < 1) {
       toast.error('Cancellations must be made at least 1 day in advance')
       return
     }
+    setPendingCancel({ id: bookingId, date: sessionDate })
+    setCancelReason('')
+    setShowCancelModal(true)
+  }
+
+  const submitCancel = async () => {
+    if (!pendingCancel) return
+    if (!cancelReason.trim()) {
+      toast.error('Please provide a brief reason')
+      return
+    }
+    const confirmed = window.confirm('Are you sure you want to cancel this booking?')
+    if (!confirmed) return
 
     try {
       const response = await fetch('/api/bookings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ booking_id: bookingId, status: 'cancelled' })
+        body: JSON.stringify({ booking_id: pendingCancel.id, status: 'cancelled' })
       })
-
       if (!response.ok) throw new Error('Failed to cancel booking')
-
       toast.success('Booking cancelled successfully')
+      setShowCancelModal(false)
+      setPendingCancel(null)
       fetchSessions()
     } catch (error) {
       console.error('Error cancelling booking:', error)
@@ -188,7 +203,7 @@ export default function MySessionsPage() {
                   <div className="flex items-center space-x-3">
                     {canCancel && (
                       <button
-                        onClick={() => handleCancelBooking(session.id, session.lab_slot.date)}
+                        onClick={() => openCancelModal(session.id, session.lab_slot.date)}
                         className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
                       >
                         Cancel Session
@@ -224,6 +239,36 @@ export default function MySessionsPage() {
           )}
         </div>
       </div>
+
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
+            <h3 className="text-lg font-semibold text-slate-800 mb-4">Cancel Booking</h3>
+            <p className="text-slate-600 mb-3">Please provide a brief reason for cancelling this booking.</p>
+            <textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              rows={4}
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800"
+              placeholder="e.g., schedule conflict, feeling unwell, other"
+            />
+            <div className="mt-5 flex items-center justify-end gap-3">
+              <button
+                onClick={() => { setShowCancelModal(false); setPendingCancel(null) }}
+                className="px-4 py-2 rounded-lg text-slate-600 hover:text-slate-800"
+              >
+                Keep Booking
+              </button>
+              <button
+                onClick={submitCancel}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+              >
+                Cancel Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 } 
