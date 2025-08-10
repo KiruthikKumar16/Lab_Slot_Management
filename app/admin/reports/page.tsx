@@ -52,20 +52,11 @@ export default function AdminReports() {
     try {
       setLoading(true)
       
-      // Fetch all bookings with user and lab_slot data
-      const { data: bookings, error } = await supabase
-        .from('bookings')
-        .select(`
-          *,
-          lab_slot (*),
-          user (*)
-        `)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-
-      // Process data for reports
-      const processedData = processReportData(bookings || [])
+      // Fetch all bookings via server API (admin scope)
+      const res = await fetch('/api/bookings?all=true')
+      const payload = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(payload?.error || 'Failed to fetch bookings')
+      const processedData = processReportData(payload?.bookings || [])
       setReportData(processedData)
     } catch (error) {
       console.error('Error fetching report data:', error)
