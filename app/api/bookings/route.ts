@@ -283,7 +283,7 @@ export async function PATCH(request: Request) {
       .eq('email', userInfo.email)
       .single()
 
-    const { booking_id, status } = await request.json()
+    const { booking_id, status, cancel_reason } = await request.json()
     if (!booking_id || !status) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
     const bookingIdNum = Number(booking_id)
 
@@ -323,7 +323,7 @@ export async function PATCH(request: Request) {
         const notifications = admins.map(a => ({
           user_id: a.id,
           title: 'Slot Cancelled',
-          message: `A student cancelled booking for slot #${booking.lab_slot_id}.`,
+          message: `Student cancelled slot #${booking.lab_slot_id}${cancel_reason ? ` — Reason: ${cancel_reason}` : ''}.`,
           is_read: false
         }))
         await supabaseAdmin.from('notifications').insert(notifications)
