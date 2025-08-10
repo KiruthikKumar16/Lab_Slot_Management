@@ -36,28 +36,16 @@ export default function MySessionsPage() {
   const fetchSessions = async () => {
     try {
       setLoading(true)
-      
-      // Get current user ID from users table
-      const { data: currentUser, error: userError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', user?.email)
-        .single()
 
-      if (userError) throw userError
+      const res = await fetch('/api/bookings', { method: 'GET' })
+      const payload = await res.json().catch(() => ({}))
 
-      const { data, error } = await supabase
-        .from('bookings')
-        .select(`
-          *,
-          lab_slot (*)
-        `)
-        .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: false })
+      if (!res.ok) {
+        const msg = payload?.error || 'Failed to load sessions'
+        throw new Error(msg)
+      }
 
-      if (error) throw error
-
-      setSessions(data || [])
+      setSessions((payload?.bookings || []) as SessionWithSlot[])
     } catch (error) {
       console.error('Error fetching sessions:', error)
       toast.error('Failed to load sessions')
