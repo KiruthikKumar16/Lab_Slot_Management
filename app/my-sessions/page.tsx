@@ -22,6 +22,7 @@ export default function MySessionsPage() {
   const [cancelReason, setCancelReason] = useState('')
   const [confirmText, setConfirmText] = useState('')
   const [pendingCancel, setPendingCancel] = useState<{ id: number; date: string } | null>(null)
+  const [isCancelling, setIsCancelling] = useState(false)
 
   useEffect(() => {
     if (!user) {
@@ -84,6 +85,7 @@ export default function MySessionsPage() {
     }
 
     try {
+      setIsCancelling(true)
       const response = await fetch('/api/bookings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -97,6 +99,8 @@ export default function MySessionsPage() {
     } catch (error) {
       console.error('Error cancelling booking:', error)
       toast.error('Failed to cancel booking')
+    } finally {
+      setIsCancelling(false)
     }
   }
 
@@ -264,23 +268,32 @@ export default function MySessionsPage() {
                 type="text"
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
+                autoComplete="off"
                 className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800"
                 placeholder="DELETE"
               />
             </div>
             <div className="mt-5 flex items-center justify-end gap-3">
               <button
-                onClick={() => { setShowCancelModal(false); setPendingCancel(null) }}
-                className="px-4 py-2 rounded-lg text-slate-600 hover:text-slate-800"
+                onClick={() => { if (!isCancelling) { setShowCancelModal(false); setPendingCancel(null) } }}
+                disabled={isCancelling}
+                className={`px-4 py-2 rounded-lg ${isCancelling ? 'text-slate-400 cursor-not-allowed' : 'text-slate-600 hover:text-slate-800'}`}
               >
                 Keep Booking
               </button>
               <button
                 onClick={submitCancel}
-                disabled={!cancelReason.trim() || confirmText.trim().toLowerCase() !== 'delete'}
-                className={`px-4 py-2 rounded-lg text-white ${(!cancelReason.trim() || confirmText.trim().toLowerCase() !== 'delete') ? 'bg-red-400 cursor-not-allowed opacity-60' : 'bg-red-600 hover:bg-red-700'}`}
+                disabled={isCancelling || !cancelReason.trim() || confirmText !== 'DELETE'}
+                className={`px-4 py-2 rounded-lg text-white ${isCancelling || !cancelReason.trim() || confirmText !== 'DELETE' ? 'bg-red-400 cursor-not-allowed opacity-60' : 'bg-red-600 hover:bg-red-700'}`}
               >
-                Cancel Now
+                {isCancelling ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Cancelling...</span>
+                  </div>
+                ) : (
+                  'Cancel Now'
+                )}
               </button>
             </div>
           </div>
