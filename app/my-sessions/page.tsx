@@ -137,11 +137,14 @@ export default function MySessionsPage() {
     )
   }
 
-  const Section = ({ title, items, kind }: { title: string; items: SessionWithSlot[]; kind: 'ongoing' | 'upcoming' | 'finished' | 'cancelled' }) => (
-    <div className="space-y-4">
-      <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-2">{title}</h2>
-      {items.length > 0 ? (
-        items.map((session) => {
+  const Section = ({ title, items, kind }: { title: string; items: SessionWithSlot[]; kind: 'ongoing' | 'upcoming' | 'finished' | 'cancelled' }) => {
+    const [showAll, setShowAll] = useState(false)
+    const visibleItems = showAll ? items : items.slice(0, 2)
+    return (
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-2">{title}</h2>
+        {visibleItems.length > 0 ? (
+          visibleItems.map((session) => {
           const sessionDate = new Date(session.lab_slot.date)
           const today = new Date()
           const daysUntilSession = Math.ceil((sessionDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
@@ -192,13 +195,24 @@ export default function MySessionsPage() {
                 )}
               </div>
             </div>
-          )
-        })
-      ) : (
-        <div className="glass-card p-6 text-slate-500">No sessions in this section.</div>
-      )}
-    </div>
-  )
+            )
+          })
+        ) : (
+          <div className="glass-card p-6 text-slate-500">No sessions in this section.</div>
+        )}
+        {items.length > 2 && (
+          <div className="flex justify-center">
+            <button
+              onClick={() => setShowAll(!showAll)}
+              className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200"
+            >
+              {showAll ? 'Show less' : `Show all (${items.length})`}
+            </button>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   const categorizeSessions = (items: SessionWithSlot[]) => {
     const now = new Date()
