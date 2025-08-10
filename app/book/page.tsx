@@ -63,12 +63,25 @@ export default function BookPage() {
         nextWeek.push(date.toISOString().split('T')[0])
       }
 
+      // Get current user ID to also include their booked slots in the list
+      const { data: currentUser, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', user?.email)
+        .single()
+
+      if (userError) throw userError
+
+      // Include slots that are either:
+      // - available and not booked
+      // - booked by the current user (so they remain visible as "Booked" after refresh)
+      const filter = `and(status.eq.available,booked_by.is.null),and(status.eq.booked,booked_by.eq.${currentUser.id})`
+
       const { data, error } = await supabase
         .from('lab_slots')
         .select('*')
         .in('date', nextWeek)
-        .eq('status', 'available')
-        .is('booked_by', null)
+        .or(filter)
         .order('date', { ascending: true })
         .order('start_time', { ascending: true })
 
@@ -77,7 +90,7 @@ export default function BookPage() {
       setSlots(data || [])
     } catch (error) {
       console.error('Error fetching slots:', error)
-      toast.error('Failed to load available slots')
+      toast.error('Failed to load slots')
     } finally {
       setLoading(false)
     }

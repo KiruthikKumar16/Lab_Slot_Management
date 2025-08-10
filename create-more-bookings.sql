@@ -111,3 +111,4 @@ FROM public.bookings b
 LEFT JOIN public.users u ON b.user_id = u.id
 LEFT JOIN public.lab_slots ls ON b.lab_slot_id = ls.id
 ORDER BY ls.date DESC, ls.start_time;
+

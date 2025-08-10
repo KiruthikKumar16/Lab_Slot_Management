@@ -1,5 +1,12 @@
--- Add booking_slots table for storing booking time slots
-CREATE TABLE IF NOT EXISTS booking_slots (
+-- Drop existing booking_slots table and policies if they exist
+DROP POLICY IF EXISTS "Admins can read all booking slots" ON booking_slots;
+DROP POLICY IF EXISTS "Admins can insert booking slots" ON booking_slots;
+DROP POLICY IF EXISTS "Admins can update booking slots" ON booking_slots;
+DROP POLICY IF EXISTS "Admins can delete booking slots" ON booking_slots;
+DROP TABLE IF EXISTS booking_slots;
+
+-- Create booking_slots table for storing booking time slots
+CREATE TABLE booking_slots (
   id SERIAL PRIMARY KEY,
   date DATE NOT NULL,
   start_time TIME NOT NULL,
@@ -10,7 +17,7 @@ CREATE TABLE IF NOT EXISTS booking_slots (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Add RLS policies for booking_slots
+-- Enable Row Level Security
 ALTER TABLE booking_slots ENABLE ROW LEVEL SECURITY;
 
 -- Allow admins to read all booking slots
