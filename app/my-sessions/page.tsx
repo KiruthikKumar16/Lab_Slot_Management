@@ -137,7 +137,7 @@ export default function MySessionsPage() {
     )
   }
 
-  const Section = ({ title, items }: { title: string; items: SessionWithSlot[] }) => (
+  const Section = ({ title, items, kind }: { title: string; items: SessionWithSlot[]; kind: 'ongoing' | 'upcoming' | 'finished' | 'cancelled' }) => (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold text-slate-800 mt-8 mb-2">{title}</h2>
       {items.length > 0 ? (
@@ -146,7 +146,7 @@ export default function MySessionsPage() {
           const today = new Date()
           const daysUntilSession = Math.ceil((sessionDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
           const canCancel = daysUntilSession >= 1 && session.status === 'booked'
-          const canSubmitSamples = session.status === 'booked' && !session.samples_count
+          const canSubmitSamples = kind === 'ongoing' && session.status === 'booked' && !session.samples_count
           return (
             <div key={session.id} className="glass-card p-6">
               <div className="flex items-start justify-between mb-4">
@@ -229,10 +229,10 @@ export default function MySessionsPage() {
         </div>
 
         {/* Sectioned Sessions */}
-        <Section title="Ongoing" items={categorizeSessions(sessions).ongoing} />
-        <Section title="Upcoming" items={categorizeSessions(sessions).upcoming} />
-        <Section title="Finished" items={categorizeSessions(sessions).finished} />
-        <Section title="Cancelled" items={categorizeSessions(sessions).cancelled} />
+        <Section title="Ongoing" items={categorizeSessions(sessions).ongoing} kind="ongoing" />
+        <Section title="Upcoming" items={categorizeSessions(sessions).upcoming} kind="upcoming" />
+        <Section title="Finished" items={categorizeSessions(sessions).finished} kind="finished" />
+        <Section title="Cancelled" items={categorizeSessions(sessions).cancelled} kind="cancelled" />
       </div>
 
       {showCancelModal && (
