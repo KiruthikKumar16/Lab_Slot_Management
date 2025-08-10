@@ -66,7 +66,7 @@ export default function MySessionsPage() {
     }
   }
 
-  const handleCancelBooking = async (bookingId: string, sessionDate: string) => {
+  const handleCancelBooking = async (bookingId: number, sessionDate: string) => {
     const today = new Date()
     const sessionDateObj = new Date(sessionDate)
     const daysUntilSession = Math.ceil((sessionDateObj.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
