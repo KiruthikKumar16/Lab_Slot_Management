@@ -135,7 +135,35 @@ export default function BookPage() {
       const mergedMap = new Map<number, LabSlot>()
       for (const s of mine) mergedMap.set(s.id, s)
       for (const s of available) if (!mergedMap.has(s.id)) mergedMap.set(s.id, s)
-      setSlots(Array.from(mergedMap.values()))
+
+      const items = Array.from(mergedMap.values())
+
+      // Local helpers for sorting
+      const hasExpired = (slot: LabSlot) => {
+        const now = new Date()
+        const slotDate = new Date(slot.date)
+        const slotStartTime = new Date(`${slot.date}T${slot.start_time}`)
+        if (slotDate < now && slotDate.toDateString() !== now.toDateString()) return true
+        if (slotDate.toDateString() === now.toDateString() && slotStartTime < now) return true
+        return false
+      }
+      const bookedIds = new Set<number>(mine.map(s => s.id))
+      const priority = (slot: LabSlot) => {
+        if (!hasExpired(slot) && slot.status === 'available' && !slot.booked_by) return 0 // available first
+        if (bookedIds.has(slot.id)) return 1 // user's booked next
+        return 2 // expired or anything else last
+      }
+      const toTs = (slot: LabSlot) => new Date(`${slot.date}T${slot.start_time}`).getTime()
+
+      const sorted = items.sort((a, b) => {
+        const pa = priority(a)
+        const pb = priority(b)
+        if (pa !== pb) return pa - pb
+        // tie-break by date/time
+        return toTs(a) - toTs(b)
+      })
+
+      setSlots(sorted)
     } catch (error) {
       console.error('Error fetching slots:', error)
       toast.error('Failed to load slots')
