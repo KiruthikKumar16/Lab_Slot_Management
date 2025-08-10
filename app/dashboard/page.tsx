@@ -82,10 +82,7 @@ export default function StudentDashboard() {
       // Fetch user's booked slots using the database user ID
       const { data: bookedSlots, error } = await supabase
         .from('lab_slots')
-        .select(`
-          *,
-          user (*)
-        `)
+        .select(`*`)
         .eq('booked_by', dbUser.id)
         .order('date', { ascending: true })
         .order('start_time', { ascending: true })
