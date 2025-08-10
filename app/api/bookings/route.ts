@@ -240,3 +240,110 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 } 
+
+export async function PATCH(request: Request) {
+  try {
+    // Auth
+    const cookieStore = cookies()
+    const accessToken = cookieStore.get('google_access_token')?.value
+    if (!accessToken) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { 'Authorization': `Bearer ${accessToken}` },
+    })
+    if (!userInfoResponse.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const userInfo = await userInfoResponse.json()
+
+    const { data: dbUser } = await supabaseAdmin
+      .from('users')
+      .select('id, role')
+      .eq('email', userInfo.email)
+      .single()
+
+    const { booking_id, status, cancelled_by } = await request.json()
+    if (!booking_id || !status) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+
+    // Ensure ownership or admin
+    const { data: booking } = await supabaseAdmin
+      .from('bookings')
+      .select('id, user_id, lab_slot_id')
+      .eq('id', booking_id)
+      .single()
+
+    if (!booking) return NextResponse.json({ error: 'Booking not found' }, { status: 404 })
+    if (dbUser && dbUser.role !== 'admin' && booking.user_id !== dbUser.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    // Update booking
+    const { error: updErr } = await supabaseAdmin
+      .from('bookings')
+      .update({ status, cancelled_by })
+      .eq('id', booking_id)
+
+    if (updErr) return NextResponse.json({ error: 'Failed to update booking' }, { status: 500 })
+
+    // Free slot if cancelled
+    if (status === 'cancelled') {
+      await supabaseAdmin
+        .from('lab_slots')
+        .update({ status: 'available', booked_by: null })
+        .eq('id', booking.lab_slot_id)
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Patch bookings API error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    // Auth
+    const cookieStore = cookies()
+    const accessToken = cookieStore.get('google_access_token')?.value
+    if (!accessToken) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { 'Authorization': `Bearer ${accessToken}` },
+    })
+    if (!userInfoResponse.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const userInfo = await userInfoResponse.json()
+
+    const { data: dbUser } = await supabaseAdmin
+      .from('users')
+      .select('id, role')
+      .eq('email', userInfo.email)
+      .single()
+
+    const { booking_id } = await request.json()
+    if (!booking_id) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+
+    const { data: booking } = await supabaseAdmin
+      .from('bookings')
+      .select('id, user_id, lab_slot_id')
+      .eq('id', booking_id)
+      .single()
+
+    if (!booking) return NextResponse.json({ error: 'Booking not found' }, { status: 404 })
+    if (dbUser && dbUser.role !== 'admin' && booking.user_id !== dbUser.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    await supabaseAdmin
+      .from('bookings')
+      .delete()
+      .eq('id', booking_id)
+
+    await supabaseAdmin
+      .from('lab_slots')
+      .update({ status: 'available', booked_by: null })
+      .eq('id', booking.lab_slot_id)
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Delete bookings API error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
