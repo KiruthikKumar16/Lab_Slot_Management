@@ -46,17 +46,13 @@ export default function AdminDashboard() {
     try {
       setLoading(true)
       
-      // Fetch all bookings
-      const { data: bookings, error: bookingsError } = await supabase
-        .from('bookings')
-        .select(`
-          *,
-          lab_slot (*),
-          user (*)
-        `)
-        .order('created_at', { ascending: false })
-
-      if (bookingsError) throw bookingsError
+      // Fetch all bookings via server API (admin scope)
+      const res = await fetch('/api/bookings?all=true')
+      const payload = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(payload?.error || 'Failed to fetch bookings')
+      }
+      const bookings = payload?.bookings || []
 
       // Fetch all students
       const { data: students, error: studentsError } = await supabase

@@ -223,6 +223,7 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const user_id = searchParams.get('user_id')
+    const listAll = searchParams.get('all') === 'true'
     const booking_id = searchParams.get('booking_id')
 
     let query = supabaseAdmin
@@ -243,7 +244,7 @@ export async function GET(request: Request) {
       } else {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
       }
-    } else {
+    } else if (!listAll) {
       // Regular users can only see their own bookings
       query = query.eq('user_id', dbUser.id)
     }
