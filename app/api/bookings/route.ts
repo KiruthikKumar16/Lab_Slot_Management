@@ -66,31 +66,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Booking is currently closed' }, { status: 403 })
     }
 
-    // Cooldown: 2 hours after last cancellation before new booking
-    const { data: lastCancelled } = await supabaseAdmin
+    const { lab_slot_id } = await request.json()
+
+    if (!lab_slot_id) {
+      return NextResponse.json({ error: 'Lab slot ID is required' }, { status: 400 })
+    }
+
+    // Per-slot cooldown: 60 minutes only when rebooking the SAME slot after cancelling
+    const { data: lastCancelledSame } = await supabaseAdmin
       .from('bookings')
       .select('updated_at')
       .eq('user_id', dbUser.id)
+      .eq('lab_slot_id', lab_slot_id)
       .eq('status', 'cancelled')
       .order('updated_at', { ascending: false })
       .limit(1)
       .maybeSingle()
 
-    if (lastCancelled?.updated_at) {
-      const lastMs = new Date(lastCancelled.updated_at).getTime()
+    if (lastCancelledSame?.updated_at) {
+      const lastMs = new Date(lastCancelledSame.updated_at).getTime()
       const nowMs = Date.now()
-      const cooldownMs = 2 * 60 * 60 * 1000
+      const cooldownMs = 60 * 60 * 1000 // 60 minutes
       if (nowMs - lastMs < cooldownMs) {
         const remaining = cooldownMs - (nowMs - lastMs)
         const mins = Math.ceil(remaining / (60 * 1000))
-        return NextResponse.json({ error: `Please wait ${mins} minute(s) before booking again.` }, { status: 429 })
+        return NextResponse.json({ error: `Please wait ${mins} minute(s) before rebooking this slot.` }, { status: 429 })
       }
-    }
-
-    const { lab_slot_id } = await request.json()
-
-    if (!lab_slot_id) {
-      return NextResponse.json({ error: 'Lab slot ID is required' }, { status: 400 })
     }
 
     // Check if slot exists and is available
