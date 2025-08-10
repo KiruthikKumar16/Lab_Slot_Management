@@ -97,32 +97,45 @@ export default function BookPage() {
 
       if (userError) throw userError
 
-      // Include slots that are either:
-      // - available and not booked, OR
-      // - booked by the current user
-      let { data, error } = await supabase
-        .from('lab_slots')
-        .select('*')
-        .in('date', nextWeek)
-        .or(`and(status.eq.available,booked_by.is.null),and(status.eq.booked,booked_by.eq.${currentUser.id})`)
-        .order('date', { ascending: true })
-        .order('start_time', { ascending: true })
+      // Fetch available and my booked slots separately to avoid OR-filter quirks
+      const [availRes, mineRes] = await Promise.all([
+        supabase
+          .from('lab_slots')
+          .select('*')
+          .in('date', nextWeek)
+          .eq('status', 'available')
+          .is('booked_by', null)
+          .order('date', { ascending: true })
+          .order('start_time', { ascending: true }),
+        supabase
+          .from('lab_slots')
+          .select('*')
+          .in('date', nextWeek)
+          .eq('status', 'booked')
+          .eq('booked_by', currentUser.id)
+          .order('date', { ascending: true })
+          .order('start_time', { ascending: true })
+      ])
 
-      if (error) throw error
+      if (availRes.error) throw availRes.error
+      if (mineRes.error) throw mineRes.error
 
-      // Ensure slots booked by the user are reflected in local bookedSlots state
-      if (data && data.length > 0) {
-        const mine = data.filter(s => s.booked_by === currentUser.id && s.status === 'booked')
-        if (mine.length > 0) {
-          setBookedSlots(prev => {
-            const next = new Set<number>(prev)
-            for (const s of mine) next.add(s.id)
-            return next
-          })
-        }
+      const available = availRes.data || []
+      const mine = mineRes.data || []
+
+      // Sync booked slot ids
+      if (mine.length > 0) {
+        setBookedSlots(prev => {
+          const next = new Set<number>(prev)
+          for (const s of mine) next.add(s.id)
+          return next
+        })
       }
 
-      setSlots(data || [])
+      const mergedMap = new Map<number, LabSlot>()
+      for (const s of mine) mergedMap.set(s.id, s)
+      for (const s of available) if (!mergedMap.has(s.id)) mergedMap.set(s.id, s)
+      setSlots(Array.from(mergedMap.values()))
     } catch (error) {
       console.error('Error fetching slots:', error)
       toast.error('Failed to load slots')
@@ -259,16 +272,22 @@ export default function BookPage() {
 
       if (slotError) throw slotError
 
-      // Book the slot
-      const { error } = await supabase
+      // Book the slot atomically: only if still available and unbooked
+      const { data: updatedSlot, error: updateErr } = await supabase
         .from('lab_slots')
-        .update({
-          status: 'booked',
-          booked_by: appUser.id
-        })
+        .update({ status: 'booked', booked_by: appUser.id })
         .eq('id', slotId)
+        .eq('status', 'available')
+        .is('booked_by', null)
+        .select('id, status, booked_by')
+        .single()
 
-      if (error) throw error
+      if (updateErr) throw updateErr
+      if (!updatedSlot) {
+        toast.error('This slot just got booked by someone else')
+        fetchSlots()
+        return
+      }
 
       // Create booking record
       const { error: bookingError } = await supabase
