@@ -22,7 +22,7 @@ export interface User {
 }
 
 export interface LabSlot {
-  id: string
+  id: number
   date: string
   start_time: string
   end_time: string
@@ -33,7 +33,7 @@ export interface LabSlot {
 }
 
 export interface Booking {
-  id: string
+  id: number
   user_id: number
   lab_slot_id: number
   booking_time: string

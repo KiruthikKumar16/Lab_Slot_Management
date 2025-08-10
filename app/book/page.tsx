@@ -15,9 +15,9 @@ export default function BookPage() {
   const [slots, setSlots] = useState<LabSlot[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState('')
-  const [bookingLoading, setBookingLoading] = useState<string | null>(null)
+  const [bookingLoading, setBookingLoading] = useState<number | null>(null)
   const [bookingSettings, setBookingSettings] = useState<BookingSystemSettings | null>(null)
-  const [bookedSlots, setBookedSlots] = useState<Set<string>>(new Set())
+  const [bookedSlots, setBookedSlots] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     if (!user) {
@@ -177,7 +177,7 @@ export default function BookPage() {
     return bookingSettings.message
   }
 
-  const handleBookSlot = async (slotId: string) => {
+  const handleBookSlot = async (slotId: number) => {
     if (!user) return
 
     if (!isBookingAllowed()) {
@@ -252,8 +252,12 @@ export default function BookPage() {
       }
 
       toast.success('Slot booked successfully!')
-      // Add to booked slots set
-      setBookedSlots(prev => new Set(Array.from(prev).concat(slotId)))
+      // Add to booked slots set without iterating the Set (TS downlevel iteration safe)
+      setBookedSlots(prev => {
+        const next = new Set<number>(prev)
+        next.add(slotId)
+        return next
+      })
       fetchSlots()
     } catch (error) {
       console.error('Error booking slot:', error)
@@ -311,9 +315,7 @@ export default function BookPage() {
     return slot.status === 'available' && !slot.booked_by
   }
 
-  const isSlotBookedByUser = (slot: LabSlot) => {
-    return bookedSlots.has(slot.id)
-  }
+  const isSlotBookedByUser = (slot: LabSlot) => bookedSlots.has(slot.id)
 
   if (loading) {
     return (
