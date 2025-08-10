@@ -313,6 +313,21 @@ export async function PATCH(request: Request) {
         .from('lab_slots')
         .update({ status: 'available', booked_by: null })
         .eq('id', booking.lab_slot_id)
+
+      // Notify admins about cancellation
+      const { data: admins } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('role', 'admin')
+      if (admins && admins.length) {
+        const notifications = admins.map(a => ({
+          user_id: a.id,
+          title: 'Slot Cancelled',
+          message: `A student cancelled booking for slot #${booking.lab_slot_id}.`,
+          is_read: false
+        }))
+        await supabaseAdmin.from('notifications').insert(notifications)
+      }
     } else if (status === 'booked') {
       await supabaseAdmin
         .from('lab_slots')
