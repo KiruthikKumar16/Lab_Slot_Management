@@ -207,8 +207,8 @@ export async function GET(request: Request) {
       .from('bookings')
       .select(`
         *,
-        lab_slot (*),
-        user!inner(email, role)
+        lab_slot:lab_slots!lab_slot_id (*),
+        user:users!user_id (email, role)
       `)
 
     // If user_id is provided and user is admin, allow viewing other bookings
